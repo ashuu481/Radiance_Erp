@@ -83,15 +83,16 @@ def dashboard():
 
     conn = get_db()
     cur = conn.cursor()
+
     cur.execute("SELECT part, qty FROM stock")
-    data = cur.fetchall()
+    rows = cur.fetchall()
 
     parts = []
     qtys = []
 
-    for i in data:
-        parts.append(i['part'])
-        qtys.append(i['qty'])
+    for r in rows:
+        parts.append(r['part'])
+        qtys.append(r['qty'])
 
     conn.close()
 

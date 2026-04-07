@@ -1,56 +1,47 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Dashboard</h3>
+<h3>Dashboard Analytics</h3>
 
-<!-- 🔷 Stats Cards -->
-<div style="display:flex; gap:15px; flex-wrap:wrap;">
+<!-- 🔷 Charts Layout -->
+<div style="display:flex; gap:20px; flex-wrap:wrap;">
 
-<div class="card">
-<h4>Total Items</h4>
-<p>{{ parts|length if parts else 0 }}</p>
-</div>
+    <!-- BAR CHART -->
+    <div class="card" style="flex:1; min-width:300px;">
+        <h4>Stock Quantity</h4>
+        <canvas id="barChart"></canvas>
+    </div>
 
-<div class="card">
-<h4>Total Stock</h4>
-<p>
-{% if qtys %}
-{{ qtys | sum }}
-{% else %}
-0
-{% endif %}
-</p>
-</div>
-
-<div class="card">
-<h4>Status</h4>
-<p>Active</p>
-</div>
+    <!-- PIE CHART -->
+    <div class="card" style="flex:1; min-width:300px;">
+        <h4>Stock Distribution</h4>
+        <canvas id="pieChart"></canvas>
+    </div>
 
 </div>
 
-<br>
+<!-- 🔷 SAFE DATA (NO JINJA ERROR) -->
+<script>
+var parts = [];
+var qtys = [];
 
-<!-- 🔷 Chart Section -->
-<div class="card">
+try {
+    parts = JSON.parse('{{ parts | tojson | safe if parts is defined else "[]" }}');
+    qtys = JSON.parse('{{ qtys | tojson | safe if qtys is defined else "[]" }}');
+} catch (e) {
+    parts = [];
+    qtys = [];
+}
+</script>
 
-{% if parts and qtys %}
-<canvas id="chart"></canvas>
-{% else %}
-<p>No stock data available</p>
-{% endif %}
-
-</div>
-
-<!-- 🔷 Chart Script -->
+<!-- 🔷 CHART -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-let parts = {{ parts | tojson if parts else '[]' }};
-let qtys = {{ qtys | tojson if qtys else '[]' }};
-
 if(parts.length > 0){
-    new Chart(document.getElementById('chart'), {
+
+    // BAR CHART
+    new Chart(document.getElementById('barChart'), {
         type: 'bar',
         data: {
             labels: parts,
@@ -58,16 +49,25 @@ if(parts.length > 0){
                 label: 'Stock Quantity',
                 data: qtys
             }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true
-                }
-            }
         }
     });
+
+    // PIE CHART
+    new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: {
+            labels: parts,
+            datasets: [{
+                data: qtys
+            }]
+        }
+    });
+
+} else {
+
+    document.getElementById("barChart").outerHTML = "<p>No data available</p>";
+    document.getElementById("pieChart").outerHTML = "";
+
 }
 </script>
 

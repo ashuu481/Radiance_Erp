@@ -4,18 +4,31 @@
 <title>Radiance ERP</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<button onclick="toggleTheme()">🌗</button>
 <style>
+
 body {
     font-family: Arial;
-    background: #f4f6f9;
     margin: 0;
+    transition: 0.3s;
+}
+
+/* LIGHT MODE */
+body.light {
+    background: #f4f6f9;
+    color: black;
+}
+
+/* DARK MODE */
+body.dark {
+    background: #121212;
+    color: white;
 }
 
 .nav {
     background: #111;
-    padding: 12px;
     color: white;
+    padding: 12px;
 }
 
 .nav a {
@@ -29,36 +42,28 @@ body {
 }
 
 .card {
-    background: white;
     padding: 15px;
-    margin-bottom: 20px;
     border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+/* Light card */
+body.light .card {
+    background: white;
     box-shadow: 0 0 10px #ccc;
 }
 
-input {
-    padding: 10px;
-    margin: 5px;
-    width: 200px;
+/* Dark card */
+body.dark .card {
+    background: #1e1e1e;
 }
 
 button {
     padding: 10px;
-    background: black;
-    color: white;
     border: none;
+    cursor: pointer;
 }
 
-table {
-    width: 100%;
-    background: white;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-}
 </style>
 
 </head>
@@ -66,7 +71,9 @@ th, td {
 <body>
 
 <div class="nav">
+
 Radiance ERP |
+
 
 <a href="/dashboard">Dashboard</a>
 <a href="/inward">Inward</a>
@@ -76,6 +83,27 @@ Radiance ERP |
 <a href="/history">History</a>
 <a href="/scan">Scan</a>
 <a href="/logout">Logout</a>
+<!-- 👇 ROLE GREETING -->
+<span style="float:right;">
+👋 Welcome {{ session['user'] }} ({{ session['role'] }})
+<script>
+
+// load saved theme
+let theme = localStorage.getItem("theme") || "light";
+document.body.className = theme;
+
+function toggleTheme(){
+    if(document.body.className === "light"){
+        document.body.className = "dark";
+        localStorage.setItem("theme", "dark");
+    } else {
+        document.body.className = "light";
+        localStorage.setItem("theme", "light");
+    }
+}
+
+</script>
+</span>
 </div>
 
 <div class="container">
