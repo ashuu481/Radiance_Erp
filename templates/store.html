@@ -1,41 +1,32 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
-<h3>Inventory</h3>
+<h3>Inward Entry</h3>
 
-{% if low_stock %}
-<div class="alert alert-danger">
-⚠ Low Stock: {{ low_stock }}
-</div>
-{% endif %}
+<form method="post">
+    <input name="part" placeholder="Part Number" value="{{ part }}" required>
+    <input name="qty" placeholder="Quantity" required>
+    <input name="type" placeholder="Raw / Supplier" required>
+    <button>Add</button>
+</form>
 
-<div class="card p-3">
+<br>
 
-<table class="table table-hover">
-
+<table border="1">
 <tr>
 <th>Part</th>
-<th>Quantity</th>
-<th>QR</th>
+<th>Qty</th>
+<th>Type</th>
 </tr>
 
 {% for i in data %}
 <tr>
 <td>{{ i['part'] }}</td>
-<td>
-<span class="badge bg-success">{{ i['qty'] }}</span>
-</td>
-<td>
-<a href="/generate_qr/{{ i['part'] }}" class="btn btn-sm btn-info">
-QR
-</a>
-</td>
+<td>{{ i['qty'] }}</td>
+<td>{{ i['type'] }}</td>
 </tr>
 {% endfor %}
 
 </table>
-
-</div>
 
 {% endblock %}

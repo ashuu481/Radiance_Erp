@@ -1,25 +1,16 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
 <h3>Dashboard</h3>
 
-<div class="row g-3">
+<p>Welcome to Radiance ERP System</p>
 
-<div class="col-md-4">
-<div class="card p-3 bg-primary text-white">
-<h5>Welcome</h5>
-<h3>{{ session['user'] }}</h3>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card p-3 bg-success text-white">
-<h5>Role</h5>
-<h3>{{ session['role'] }}</h3>
-</div>
-</div>
-
-</div>
+<ul>
+<li>Manage Inward Materials</li>
+<li>Track Stock</li>
+<li>Production Handling</li>
+<li>QR Scan System</li>
+<li>History Tracking</li>
+</ul>
 
 {% endblock %}

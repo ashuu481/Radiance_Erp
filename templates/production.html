@@ -1,33 +1,14 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
 <h3>Production</h3>
 
-<div class="card p-3 mb-4">
-
-<form method="post" class="row g-3">
-
-<div class="col-md-5">
-<input name="part" class="form-control" placeholder="Part No" required>
-</div>
-
-<div class="col-md-5">
-<input name="qty" type="number" class="form-control" placeholder="Quantity Used" required>
-</div>
-
-<div class="col-md-2">
-<button class="btn btn-warning w-100">
-<i class="bi bi-gear"></i> Use
-</button>
-</div>
-
+<form method="post">
+    <input name="part" placeholder="Part Number" required>
+    <input name="qty" placeholder="Quantity Used" required>
+    <button>Submit</button>
 </form>
 
-</div>
-
-{% if message %}
-<div class="alert alert-info">{{message}}</div>
-{% endif %}
+<p>{{ msg }}</p>
 
 {% endblock %}

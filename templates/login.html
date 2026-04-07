@@ -1,41 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<style>
-body {
-    background: linear-gradient(135deg,#0f172a,#1e293b);
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.card {
-    width:350px;
-    padding:30px;
-    border-radius:15px;
-}
-</style>
-
+    <title>Login</title>
 </head>
-
 <body>
 
-<div class="card shadow">
-<h3 class="text-center mb-3">ERP Login</h3>
+<h2>Login</h2>
 
 <form method="post">
-<input name="username" class="form-control mb-3" placeholder="Username" required>
-<input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
-
-<button class="btn btn-dark w-100">Login</button>
+    <input name="username" placeholder="Username" required><br><br>
+    <input name="password" type="password" placeholder="Password" required><br><br>
+    <button type="submit">Login</button>
 </form>
-
-</div>
 
 </body>
 </html>
