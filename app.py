@@ -7,6 +7,9 @@ app.secret_key = "erp_secret_key"
 import os
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 @app.route('/scan')
@@ -56,16 +59,16 @@ def import_excel():
 
 # ---------------- DATABASE ----------------
 def get_db():
-    conn = sqlite3.connect("erp.db")
+    conn = sqlite3.connect("erp.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
-
+   
 
 # ---------------- INIT DB ----------------
 def init_db():
     conn = get_db()
     cur = conn.cursor()
-
+    init_db()
     # USERS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
