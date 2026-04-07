@@ -1,32 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Inward Entry</h3>
+<h3>Stock</h3>
 
-<form method="post">
-    <input name="part" placeholder="Part Number" value="{{ part }}" required>
-    <input name="qty" placeholder="Quantity" required>
-    <input name="type" placeholder="Raw / Supplier" required>
-    <button>Add</button>
-</form>
+<a href="/export">📥 Export Excel</a>
 
-<br>
+{% if low %}
+<p style="color:red;">⚠ Low Stock: {{ low }}</p>
+{% endif %}
 
-<table border="1">
-<tr>
-<th>Part</th>
-<th>Qty</th>
-<th>Type</th>
-</tr>
+<div class="card">
+<table>
+<tr><th>Part</th><th>Qty</th></tr>
 
 {% for i in data %}
 <tr>
 <td>{{ i['part'] }}</td>
 <td>{{ i['qty'] }}</td>
-<td>{{ i['type'] }}</td>
 </tr>
 {% endfor %}
 
 </table>
+</div>
 
 {% endblock %}

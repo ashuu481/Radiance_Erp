@@ -3,6 +3,18 @@ import sqlite3, os, qrcode
 
 app = Flask(__name__)
 app.secret_key = "secret123"
+import pandas as pd
+
+@app.route('/export')
+def export():
+    conn = get_db()
+    df = pd.read_sql_query("SELECT * FROM stock", conn)
+    conn.close()
+
+    file = "stock.xlsx"
+    df.to_excel(file, index=False)
+
+    return f"<a href='/{file}'>Download Excel</a>"
 
 # ---------------- DB ----------------
 def get_db():
@@ -68,8 +80,22 @@ def login():
 def dashboard():
     if 'user' not in session:
         return redirect('/')
-    return render_template("home.html")
 
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT part, qty FROM stock")
+    data = cur.fetchall()
+
+    parts = []
+    qtys = []
+
+    for i in data:
+        parts.append(i['part'])
+        qtys.append(i['qty'])
+
+    conn.close()
+
+    return render_template("home.html", parts=parts, qtys=qtys)
 # ---------------- INWARD ----------------
 @app.route('/inward', methods=['GET','POST'])
 def inward():
@@ -153,6 +179,40 @@ def production():
         conn.close()
 
     return render_template("production.html", msg=msg)
+# ---------------- DISPATCH ----------------
+@app.route('/dispatch', methods=['GET','POST'])
+def dispatch():
+    if session.get('role') not in ['admin','dispatch']:
+        return "Access Denied"
+
+    msg = ""
+
+    if request.method == 'POST':
+        part = request.form['part']
+        qty = int(request.form['qty'])
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("SELECT qty FROM stock WHERE part=?", (part,))
+        s = cur.fetchone()
+
+        if s and s['qty'] >= qty:
+            cur.execute("UPDATE stock SET qty=qty-? WHERE part=?", (qty,part))
+
+            cur.execute("""
+            INSERT INTO history(part,qty,action,user)
+            VALUES(?,?,?,?)
+            """,(part,qty,"DISPATCH",session['user']))
+
+            msg = "Dispatched Successfully"
+        else:
+            msg = "Not enough stock"
+
+        conn.commit()
+        conn.close()
+
+    return render_template("dispatch.html", msg=msg)
 
 # ---------------- HISTORY ----------------
 @app.route('/history')

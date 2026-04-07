@@ -3,14 +3,72 @@
 
 <h3>Dashboard</h3>
 
-<p>Welcome to Radiance ERP System</p>
+<!-- 🔷 Stats Cards -->
+<div style="display:flex; gap:15px; flex-wrap:wrap;">
 
-<ul>
-<li>Manage Inward Materials</li>
-<li>Track Stock</li>
-<li>Production Handling</li>
-<li>QR Scan System</li>
-<li>History Tracking</li>
-</ul>
+<div class="card">
+<h4>Total Items</h4>
+<p>{{ parts|length if parts else 0 }}</p>
+</div>
+
+<div class="card">
+<h4>Total Stock</h4>
+<p>
+{% if qtys %}
+{{ qtys | sum }}
+{% else %}
+0
+{% endif %}
+</p>
+</div>
+
+<div class="card">
+<h4>Status</h4>
+<p>Active</p>
+</div>
+
+</div>
+
+<br>
+
+<!-- 🔷 Chart Section -->
+<div class="card">
+
+{% if parts and qtys %}
+<canvas id="chart"></canvas>
+{% else %}
+<p>No stock data available</p>
+{% endif %}
+
+</div>
+
+<!-- 🔷 Chart Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let parts = {{ parts | tojson if parts else '[]' }};
+let qtys = {{ qtys | tojson if qtys else '[]' }};
+
+if(parts.length > 0){
+    new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: {
+            labels: parts,
+            datasets: [{
+                label: 'Stock Quantity',
+                data: qtys
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            }
+        }
+    });
+}
+</script>
 
 {% endblock %}

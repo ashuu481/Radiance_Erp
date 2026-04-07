@@ -1,28 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radiance ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radiance ERP</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    font-family: Arial;
+    background: #f4f6f9;
+    margin: 0;
+}
+
+.nav {
+    background: #111;
+    padding: 12px;
+    color: white;
+}
+
+.nav a {
+    color: white;
+    margin: 10px;
+    text-decoration: none;
+}
+
+.container {
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px #ccc;
+}
+
+input {
+    padding: 10px;
+    margin: 5px;
+    width: 200px;
+}
+
+button {
+    padding: 10px;
+    background: black;
+    color: white;
+    border: none;
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+</style>
+
 </head>
+
 <body>
 
-<h2>Radiance ERP</h2>
+<div class="nav">
+Radiance ERP |
 
-{% if session.get('user') %}
-<p>Logged in as: {{ session['user'] }} ({{ session['role'] }})</p>
-
-<a href="/dashboard">Dashboard</a> |
-<a href="/inward">Inward</a> |
-<a href="/store">Store</a> |
-<a href="/production">Production</a> |
-<a href="/history">History</a> |
-<a href="/scan">Scan</a> |
+<a href="/dashboard">Dashboard</a>
+<a href="/inward">Inward</a>
+<a href="/store">Store</a>
+<a href="/production">Production</a>
+<a href="/dispatch">Dispatch</a>
+<a href="/history">History</a>
+<a href="/scan">Scan</a>
 <a href="/logout">Logout</a>
+</div>
 
-<hr>
-{% endif %}
+<div class="container">
+<div class="card">
 
 {% block content %}{% endblock %}
+
+</div>
+</div>
 
 </body>
 </html>
