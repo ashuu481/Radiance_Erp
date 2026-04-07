@@ -5,7 +5,7 @@ import pandas as pd
 app = Flask(__name__)
 app.secret_key = "erp_secret_key"
 import os
-
+print("Page Loaded")
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
