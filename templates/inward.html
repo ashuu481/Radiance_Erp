@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Inward</h3>
+
+<div class="card p-3 mb-3">
+<form method="post" class="row g-2">
+
+<div class="col">
+<input name="part" class="form-control" value="{{ part }}">
+</div>
+
+<div class="col">
+<input name="qty" class="form-control" placeholder="Qty">
+</div>
+
+<div class="col">
+<select name="type" class="form-control">
+<option>raw</option>
+<option>supplier</option>
+</select>
+</div>
+
+<div class="col">
+<button class="btn btn-primary w-100">Add</button>
+</div>
+
+</form>
+</div>
+
+<div class="card p-3">
+<table class="table">
+<tr>
+<th>Part</th><th>Qty</th><th>Type</th><th>Status</th>
+</tr>
+
+{% for i in data %}
+<tr>
+<td>{{i['part']}}</td>
+<td>{{i['qty']}}</td>
+<td>{{i['type']}}</td>
+<td>{{i['status']}}</td>
+</tr>
+{% endfor %}
+
+</table>
+</div>
+
+{% endblock %}

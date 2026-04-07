@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>QR Scanner</h3>
+
+<div class="card p-3">
+
+<video id="preview" style="width:100%; border-radius:10px;"></video>
+
+<input type="text" id="result" class="form-control mt-3" placeholder="Scanned Part">
+
+<button onclick="useData()" class="btn btn-success mt-2">
+Use This
+</button>
+
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+function startScanner() {
+    const html5QrCode = new Html5Qrcode("preview");
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        (decodedText) => {
+            document.getElementById("result").value = decodedText;
+            html5QrCode.stop();
+        }
+    );
+}
+
+startScanner();
+
+function useData() {
+    let part = document.getElementById("result").value;
+    window.location.href = "/inward?part=" + part;
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,8 @@
+{
+  "name": "ERP System",
+  "short_name": "ERP",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
