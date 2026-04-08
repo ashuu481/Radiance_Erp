@@ -2,79 +2,87 @@
 <html>
 <head>
 <title>Radiance ERP</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<button onclick="toggleTheme()">🌗</button>
-<style>
 
+<style>
 body {
-    font-family: Arial;
     margin: 0;
+    font-family: 'Segoe UI', sans-serif;
     transition: 0.3s;
 }
 
-/* LIGHT MODE */
-body.light {
-    background: #f4f6f9;
-    color: black;
-}
+/* THEMES */
+body.light { background: #f4f6f9; color: #000; }
+body.dark { background: #121212; color: #fff; }
 
-/* DARK MODE */
-body.dark {
-    background: #121212;
-    color: white;
-}
-
+/* NAVBAR */
 .nav {
     background: #111;
     color: white;
     padding: 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
 .nav a {
     color: white;
-    margin: 10px;
+    margin: 8px;
     text-decoration: none;
 }
 
+/* CONTAINER */
 .container {
     padding: 20px;
 }
 
+/* CARD */
 .card {
     padding: 15px;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 15px;
 }
 
-/* Light card */
-body.light .card {
-    background: white;
-    box-shadow: 0 0 10px #ccc;
-}
+body.light .card { background:white; box-shadow:0 0 10px #ccc; }
+body.dark .card { background:#1e1e1e; }
 
-/* Dark card */
-body.dark .card {
-    background: #1e1e1e;
-}
-
+/* BUTTON */
 button {
-    padding: 10px;
-    border: none;
-    cursor: pointer;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:black;
+    color:white;
+    cursor:pointer;
 }
 
-</style>
+/* INPUT */
+input {
+    padding:10px;
+    margin:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
 
+/* TABLE */
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+</style>
 </head>
 
-<body>
+<body class="light">
 
 <div class="nav">
 
+<div>
 Radiance ERP |
-
-
 <a href="/dashboard">Dashboard</a>
 <a href="/inward">Inward</a>
 <a href="/store">Store</a>
@@ -83,36 +91,174 @@ Radiance ERP |
 <a href="/history">History</a>
 <a href="/scan">Scan</a>
 <a href="/logout">Logout</a>
-<!-- 👇 ROLE GREETING -->
-<span style="float:right;">
-👋 Welcome {{ session['user'] }} ({{ session['role'] }})
+</div>
+
+<div>
+{% if session.get('user') %}
+👤 {{ session.get('user') }} ({{ session.get('role') }})
+{% endif %}
+<button onclick="toggleTheme()">🌗</button>
+</div>
+
+</div>
+
+<div class="container">
+{% block content %}{% endblock %}
+</div>
+
 <script>
 
-// load saved theme
+// wait until page loads
+document.addEventListener("DOMContentLoaded", function(){
+
+    // get saved theme or default
+    let savedTheme = localStorage.getItem("theme");
+
+    if(!savedTheme){
+        savedTheme = "light";
+    }
+
+    document.body.className = savedTheme;
+
+});
+
+// toggle function
+function toggleTheme(){
+
+    let current = document.body.className;
+
+    if(current === "dark"){
+        document.body.className = "light";
+        localStorage.setItem("theme", "light");
+    } else {
+        document.body.className = "dark";
+        localStorage.setItem("theme", "dark");
+    }
+
+}
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+<title>Radiance ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    transition: 0.3s;
+}
+
+/* THEMES */
+body.light { background: #f4f6f9; color: #000; }
+body.dark { background: #121212; color: #fff; }
+
+/* NAVBAR */
+.nav {
+    background: #111;
+    color: white;
+    padding: 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.nav a {
+    color: white;
+    margin: 8px;
+    text-decoration: none;
+}
+
+/* CONTAINER */
+.container {
+    padding: 20px;
+}
+
+/* CARD */
+.card {
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+body.light .card { background:white; box-shadow:0 0 10px #ccc; }
+body.dark .card { background:#1e1e1e; }
+
+/* BUTTON */
+button {
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:black;
+    color:white;
+    cursor:pointer;
+}
+
+/* INPUT */
+input {
+    padding:10px;
+    margin:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+/* TABLE */
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+</style>
+</head>
+
+<body class="light">
+
+<div class="nav">
+
+<div>
+Radiance ERP |
+<a href="/dashboard">Dashboard</a>
+<a href="/inward">Inward</a>
+<a href="/store">Store</a>
+<a href="/production">Production</a>
+<a href="/dispatch">Dispatch</a>
+<a href="/history">History</a>
+<a href="/scan">Scan</a>
+<a href="/logout">Logout</a>
+</div>
+
+<div>
+👤 {{ session['user'] }} ({{ session['role'] }})
+<button onclick="toggleTheme()">🌗</button>
+</div>
+
+</div>
+
+<div class="container">
+
+</div>
+
+<script>
 let theme = localStorage.getItem("theme") || "light";
 document.body.className = theme;
 
 function toggleTheme(){
-    if(document.body.className === "light"){
-        document.body.className = "dark";
-        localStorage.setItem("theme", "dark");
+    if(document.body.className==="light"){
+        document.body.className="dark";
+        localStorage.setItem("theme","dark");
     } else {
-        document.body.className = "light";
-        localStorage.setItem("theme", "light");
+        document.body.className="light";
+        localStorage.setItem("theme","light");
     }
 }
-
 </script>
-</span>
-</div>
-
-<div class="container">
-<div class="card">
-
-{% block content %}{% endblock %}
-
-</div>
-</div>
 
 </body>
 </html>

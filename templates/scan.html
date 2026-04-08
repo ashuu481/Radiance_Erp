@@ -8,15 +8,11 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
-const html5QrCode = new Html5Qrcode("preview");
+const qr = new Html5Qrcode("preview");
 
-html5QrCode.start(
-    { facingMode: "environment" },
-    {},
-    (decodedText) => {
-        window.location.href = "/inward?part=" + decodedText;
-    }
-);
+qr.start({ facingMode: "environment" }, {}, text => {
+    window.location = "/inward?part=" + text;
+});
 </script>
 
 {% endblock %}

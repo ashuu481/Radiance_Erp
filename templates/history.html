@@ -1,22 +1,43 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>History</h3>
+<h3>Dashboard</h3>
 
 <div class="card">
-<table>
-<tr><th>Part</th><th>Qty</th><th>Action</th><th>User</th></tr>
-
-{% for i in data %}
-<tr>
-<td>{{ i['part'] }}</td>
-<td>{{ i['qty'] }}</td>
-<td>{{ i['action'] }}</td>
-<td>{{ i['user'] }}</td>
-</tr>
-{% endfor %}
-
-</table>
+<canvas id="barChart"></canvas>
 </div>
+
+<div class="card">
+<canvas id="pieChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+var parts = [];
+var qtys = [];
+
+try {
+    parts = JSON.parse('{{ parts | tojson | safe if parts is defined else "[]" }}');
+    qtys = JSON.parse('{{ qtys | tojson | safe if qtys is defined else "[]" }}');
+} catch(e){}
+
+if(parts.length > 0){
+
+new Chart(document.getElementById('barChart'), {
+type:'bar',
+data:{ labels:parts, datasets:[{data:qtys}] }
+});
+
+new Chart(document.getElementById('pieChart'), {
+type:'pie',
+data:{ labels:parts, datasets:[{data:qtys}] }
+});
+
+} else {
+document.getElementById('barChart').outerHTML="No Data";
+document.getElementById('pieChart').outerHTML="";
+}
+</script>
 
 {% endblock %}

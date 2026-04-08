@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Stock</h3>
+<h3>Store</h3>
 
 <a href="/export">📥 Export Excel</a>
 
@@ -12,14 +12,35 @@
 <div class="card">
 <table>
 <tr><th>Part</th><th>Qty</th></tr>
-
 {% for i in data %}
 <tr>
 <td>{{ i['part'] }}</td>
 <td>{{ i['qty'] }}</td>
 </tr>
 {% endfor %}
+</table>
+</div>
 
+{% endblock %}{% extends 'base.html' %}
+{% block content %}
+
+<h3>Store</h3>
+
+<a href="/export">📥 Export Excel</a>
+
+{% if low %}
+<p style="color:red;">⚠ Low Stock: {{ low }}</p>
+{% endif %}
+
+<div class="card">
+<table>
+<tr><th>Part</th><th>Qty</th></tr>
+{% for i in data %}
+<tr>
+<td>{{ i['part'] }}</td>
+<td>{{ i['qty'] }}</td>
+</tr>
+{% endfor %}
 </table>
 </div>
 
