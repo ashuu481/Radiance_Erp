@@ -5,6 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+/* BRAND SECTION */
+.brand .title {
+    font-size: 24px;
+    font-weight: bold;
+    .brand .title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00bcd4;
+    text-shadow: 0 0 8px rgba(0,188,212,0.5);
+}
+}
+
+.brand .tagline {
+    font-size: 12px;
+    color: gray;
+}
+
+/* NAV IMPROVEMENT */
+.nav {
+    background: linear-gradient(90deg, #1e1e2f, #2c2c54);
+    padding: 15px;
+}
+
+/* FOOTER PREMIUM */
+.footer {
+    text-align: center;
+    padding: 15px;
+    font-size: 12px;
+    color: gray;
+    border-top: 1px solid #444;
+}
+.footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    color: gray;
+    margin-top: 20px;
+}
+    /* DASHBOARD GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* BOX BUTTONS */
+.box {
+    text-decoration: none;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    font-size: 18px;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+/* LIGHT MODE */
+body.light .box {
+    background: white;
+    color: black;
+    box-shadow: 0 5px 15px #ccc;
+}
+
+/* DARK MODE */
+body.dark .box {
+    background: #1e1e1e;
+    color: white;
+}
+
+/* HOVER EFFECT */
+.box:hover {
+    transform: translateY(-5px) scale(1.05);
+}
 body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
@@ -77,41 +151,34 @@ th, td {
 </style>
 </head>
 
-<body class="light">
+<body>
 
+<!-- 🔷 NAVBAR -->
 <div class="nav">
 
-<div>
-Radiance ERP |
-<a href="/dashboard">Dashboard</a>
-<a href="/inward">Inward</a>
-<a href="/store">Store</a>
-<a href="/production">Production</a>
-<a href="/dispatch">Dispatch</a>
-<a href="/history">History</a>
-<a href="/scan">Scan</a>
-<a href="/logout">Logout</a>
+<div class="brand">
+<div class="title">Radiance Polymers</div>
+<div class="tagline">Smart Inventory & ERP System</div>
 </div>
 
 <div>
 {% if session.get('user') %}
 👤 {{ session.get('user') }} ({{ session.get('role') }})
 {% endif %}
+
 <button onclick="toggleTheme()">🌗</button>
 </div>
 
 </div>
-
+<!-- 🔷 SINGLE CONTENT BLOCK -->
 <div class="container">
 {% block content %}{% endblock %}
 </div>
 
+<!-- 🔷 THEME SCRIPT (SAFE) -->
 <script>
-
-// wait until page loads
 document.addEventListener("DOMContentLoaded", function(){
 
-    // get saved theme or default
     let savedTheme = localStorage.getItem("theme");
 
     if(!savedTheme){
@@ -122,7 +189,6 @@ document.addEventListener("DOMContentLoaded", function(){
 
 });
 
-// toggle function
 function toggleTheme(){
 
     let current = document.body.className;
@@ -137,128 +203,10 @@ function toggleTheme(){
 
 }
 </script>
-
-</body>
-</html><!DOCTYPE html>
-<html>
-<head>
-<title>Radiance ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    transition: 0.3s;
-}
-
-/* THEMES */
-body.light { background: #f4f6f9; color: #000; }
-body.dark { background: #121212; color: #fff; }
-
-/* NAVBAR */
-.nav {
-    background: #111;
-    color: white;
-    padding: 12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.nav a {
-    color: white;
-    margin: 8px;
-    text-decoration: none;
-}
-
-/* CONTAINER */
-.container {
-    padding: 20px;
-}
-
-/* CARD */
-.card {
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-}
-
-body.light .card { background:white; box-shadow:0 0 10px #ccc; }
-body.dark .card { background:#1e1e1e; }
-
-/* BUTTON */
-button {
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background:black;
-    color:white;
-    cursor:pointer;
-}
-
-/* INPUT */
-input {
-    padding:10px;
-    margin:5px;
-    border-radius:8px;
-    border:1px solid #ccc;
-}
-
-/* TABLE */
-table {
-    width:100%;
-    border-collapse:collapse;
-}
-
-th, td {
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-</style>
-</head>
-
-<body class="light">
-
-<div class="nav">
-
-<div>
-Radiance ERP |
-<a href="/dashboard">Dashboard</a>
-<a href="/inward">Inward</a>
-<a href="/store">Store</a>
-<a href="/production">Production</a>
-<a href="/dispatch">Dispatch</a>
-<a href="/history">History</a>
-<a href="/scan">Scan</a>
-<a href="/logout">Logout</a>
+<div class="footer">
+© 2026 Radiance Polymers | Developed by Ashu 🚀
 </div>
 
-<div>
-👤 {{ session['user'] }} ({{ session['role'] }})
-<button onclick="toggleTheme()">🌗</button>
-</div>
-
-</div>
-
-<div class="container">
-
-</div>
-
-<script>
-let theme = localStorage.getItem("theme") || "light";
-document.body.className = theme;
-
-function toggleTheme(){
-    if(document.body.className==="light"){
-        document.body.className="dark";
-        localStorage.setItem("theme","dark");
-    } else {
-        document.body.className="light";
-        localStorage.setItem("theme","light");
-    }
-}
-</script>
 
 </body>
 </html>

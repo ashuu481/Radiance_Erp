@@ -1,26 +1,35 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Dashboard Analytics</h3>
+<h2>Welcome to Radiance ERP</h2>
 
-<!-- 🔷 Charts Layout -->
-<div style="display:flex; gap:20px; flex-wrap:wrap;">
+<div class="grid">
 
-    <!-- BAR CHART -->
-    <div class="card" style="flex:1; min-width:300px;">
-        <h4>Stock Quantity</h4>
-        <canvas id="barChart"></canvas>
-    </div>
-
-    <!-- PIE CHART -->
-    <div class="card" style="flex:1; min-width:300px;">
-        <h4>Stock Distribution</h4>
-        <canvas id="pieChart"></canvas>
-    </div>
+<a href="/inward" class="box">📥<br>Inward</a>
+<a href="/store" class="box">📦<br>Inventory</a>
+<a href="/production" class="box">🏭<br>Production</a>
+<a href="/assembly" class="box">🛠<br>Assembly</a>
+<a href="/quality" class="box">✔<br>Quality</a>
+<a href="/dispatch" class="box">🚚<br>Dispatch</a>
+<a href="/history" class="box">📊<br>Reports</a>
+<a href="/settings" class="box">⚙<br>Settings</a>
 
 </div>
 
-<!-- 🔷 SAFE DATA (NO JINJA ERROR) -->
+<hr>
+
+<h3>Stock Analytics</h3>
+
+<div class="card">
+<canvas id="barChart"></canvas>
+</div>
+
+<div class="card">
+<canvas id="pieChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 var parts = [];
 var qtys = [];
@@ -28,45 +37,19 @@ var qtys = [];
 try {
     parts = JSON.parse('{{ parts | tojson | safe if parts is defined else "[]" }}');
     qtys = JSON.parse('{{ qtys | tojson | safe if qtys is defined else "[]" }}');
-} catch (e) {
-    parts = [];
-    qtys = [];
-}
-</script>
+} catch(e){}
 
-<!-- 🔷 CHART -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
 if(parts.length > 0){
 
-    // BAR CHART
-    new Chart(document.getElementById('barChart'), {
-        type: 'bar',
-        data: {
-            labels: parts,
-            datasets: [{
-                label: 'Stock Quantity',
-                data: qtys
-            }]
-        }
-    });
+new Chart(document.getElementById('barChart'), {
+type:'bar',
+data:{ labels:parts, datasets:[{data:qtys}] }
+});
 
-    // PIE CHART
-    new Chart(document.getElementById('pieChart'), {
-        type: 'pie',
-        data: {
-            labels: parts,
-            datasets: [{
-                data: qtys
-            }]
-        }
-    });
-
-} else {
-
-    document.getElementById("barChart").outerHTML = "<p>No data available</p>";
-    document.getElementById("pieChart").outerHTML = "";
+new Chart(document.getElementById('pieChart'), {
+type:'pie',
+data:{ labels:parts, datasets:[{data:qtys}] }
+});
 
 }
 </script>

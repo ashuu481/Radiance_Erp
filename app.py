@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, render_template, request, redirect, session
 import sqlite3, os, qrcode
 
@@ -15,7 +17,58 @@ def export():
     df.to_excel(file, index=False)
 
     return f"<a href='/{file}'>Download Excel</a>"
+@app.route('/assembly', methods=['GET','POST'])
+def assembly():
+    if not session.get('user'):
+        return redirect('/')
 
+    conn = get_db()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        part = request.form.get('part')
+        qty = request.form.get('qty')
+
+        if part and qty:
+            cur.execute("INSERT INTO assembly(part, qty) VALUES (?,?)", (part, qty))
+
+            # 🔥 OPTIONAL: add history log
+            from datetime import datetime
+            cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+                        (part, qty, "ASSEMBLY", session.get('user'), datetime.now()))
+
+            conn.commit()
+
+    # 🔴 IMPORTANT: outside POST
+    data = cur.execute("SELECT * FROM assembly").fetchall()
+
+    conn.close()
+
+    return render_template("assembly.html", data=data)
+@app.route('/quality', methods=['GET','POST'])
+def quality():
+    if not session.get('user'):
+        return redirect('/')
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        part = request.form['part']
+        status = request.form['status']
+        cur.execute("INSERT INTO quality(part, status) VALUES (?,?)", (part, status))
+        conn.commit()
+
+    data = cur.execute("SELECT * FROM quality").fetchall()
+    conn.close()
+
+    return render_template("quality.html", data=data)
+@app.route('/settings')
+def settings():
+    if not session.get('user'):
+        return redirect('/')
+
+    return render_template("settings.html")
 # ---------------- DB ----------------
 def get_db():
     conn = sqlite3.connect("erp.db", check_same_thread=False)
@@ -26,6 +79,16 @@ def get_db():
 def init_db():
     conn = get_db()
     cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY,
+    part TEXT,
+    qty INTEGER,
+    action TEXT,
+    user TEXT,
+    date TEXT
+    )
+    """)
 
     cur.execute("""CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT, role TEXT)""")
@@ -37,7 +100,10 @@ def init_db():
     id INTEGER PRIMARY KEY, part TEXT UNIQUE, qty INTEGER DEFAULT 0, min_qty INTEGER DEFAULT 10)""")
 
     cur.execute("""CREATE TABLE IF NOT EXISTS history(
-    id INTEGER PRIMARY KEY, part TEXT, qty INTEGER, action TEXT, user TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    id INTEGER PRIMARY KEY, part TEXT, qty INTEGER, action TEXT, user TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""") 
+
+    cur.execute("CREATE TABLE IF NOT EXISTS assembly (id INTEGER PRIMARY KEY, part TEXT, qty INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS quality (id INTEGER PRIMARY KEY, part TEXT, status TEXT)")
 
     users = [
         ("admin","admin","admin"),
@@ -112,6 +178,12 @@ def inward():
         part = request.form['part']
         qty = int(request.form['qty'])
         t = request.form['type']
+        from datetime import datetime
+
+        cur.execute("INSERT INTO inward(part, qty, type) VALUES (?,?,?)", (part, qty, type))
+
+        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+            (part, qty, "INWARD", session.get('user'), datetime.now()))
 
         cur.execute("INSERT INTO inward(part,qty,type) VALUES(?,?,?)",(part,qty,t))
 
@@ -164,7 +236,9 @@ def production():
 
         conn = get_db()
         cur = conn.cursor()
-
+        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+            (part, qty, "PRODUCTION", session.get('user'), datetime.now()))
+        
         cur.execute("SELECT qty FROM stock WHERE part=?", (part,))
         s = cur.fetchone()
 
@@ -197,7 +271,9 @@ def dispatch():
 
         cur.execute("SELECT qty FROM stock WHERE part=?", (part,))
         s = cur.fetchone()
-
+        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+            (part, qty, "DISPATCH", session.get('user'), datetime.now()))
+        
         if s and s['qty'] >= qty:
             cur.execute("UPDATE stock SET qty=qty-? WHERE part=?", (qty,part))
 
