@@ -14,27 +14,35 @@ from flask import Response
 import cv2
 import numpy as np
 
-camera = cv2.VideoCapture(0)
+camera = None
 current_status = "OK"
 current_status = "OK"   # 🔥 add this at top of file
 
-def generate_frames():
-    global current_status   # 🔥 important
+from flask import request, jsonify
+import base64
+import cv2
+import numpy as np
 
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
+@app.route('/detect', methods=['POST'])
+def detect():
+    try:
+        data = request.json['image']
+
+        # decode image
+        encoded = data.split(',')[1]
+        img_bytes = base64.b64decode(encoded)
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # White area
+        # white area
         _, white = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
-        # Dark spots (holes)
+        # dark (holes)
         _, dark = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
 
-        holes = cv2.bitwise_and(dark, white)
+        holes = cv2.bitwise_and(white, dark)
 
         contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -43,27 +51,14 @@ def generate_frames():
         for cnt in contours:
             if cv2.contourArea(cnt) > 100:
                 hole_count += 1
-                x, y, w, h = cv2.boundingRect(cnt)
-                cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
 
-        # 🔥 THIS IS THE IMPORTANT PART
         if hole_count > 0:
-            text = f"DEFECT ❌ ({hole_count})"
-            color = (0,0,255)
-            current_status = "DEFECT"   # 🔊 trigger sound
+            return jsonify({"result": f"DEFECT ❌ ({hole_count})"})
         else:
-            text = "OK ✅"
-            color = (0,255,0)
-            current_status = "OK"
+            return jsonify({"result": "OK ✅"})
 
-        cv2.putText(frame, text, (20,40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    except Exception as e:
+        return jsonify({"result": "Error"})
 
 @app.route('/status')
 def status():
@@ -74,10 +69,6 @@ def camera_page():
     return render_template('camera.html')
 
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/export')
 def export():

@@ -1,54 +1,81 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<h2 style="text-align:center;">📱 Live Inspection</h2>
+
+<div style="text-align:center;">
+    <video id="video" autoplay playsinline width="300" style="border-radius:15px;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <br><br>
+
+    <button onclick="startCamera()" class="btn">▶ Start</button>
+    <button onclick="stopCamera()" class="btn" style="background:red;">⛔ Stop</button>
+
+    <h3 id="status">Waiting...</h3>
+</div>
+
 <audio id="alarm" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
 
-<h3 id="statusText">Waiting...</h3>
-
 <script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
 let alarm = document.getElementById("alarm");
+
+let interval;
 let lastState = "OK";
 
-function checkStatus(){
-    fetch('/status')
+async function startCamera(){
+
+    // 🔊 unlock audio (important for mobile)
+    alarm.play().then(() => {
+        alarm.pause();
+        alarm.currentTime = 0;
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+    });
+
+    video.srcObject = stream;
+
+    interval = setInterval(captureFrame, 2000);
+}
+
+function stopCamera(){
+    video.srcObject.getTracks().forEach(track => track.stop());
+    clearInterval(interval);
+}
+
+function captureFrame(){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(video, 0, 0);
+
+    let image = canvas.toDataURL("image/jpeg", 0.5);
+
+    fetch('/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: image })
+    })
     .then(res => res.json())
     .then(data => {
 
-        document.getElementById("statusText").innerText = data.status;
+        document.getElementById("status").innerText = data.result;
 
-        if(data.status.includes("DEFECT") && lastState !== "DEFECT"){
+        // 🔊 sound alert
+        if(data.result.includes("DEFECT") && lastState !== "DEFECT"){
             alarm.play();
             lastState = "DEFECT";
         }
 
-        if(data.status.includes("OK")){
+        if(data.result.includes("OK")){
             lastState = "OK";
         }
     });
-}
-
-// check every 1 sec
-setInterval(checkStatus, 1000);
-</script>
-<h2 style="text-align:center;">🎥 Live Quality Inspection</h2>
-
-<div style="text-align:center; margin-top:20px;">
-
-    <img id="video" src="/video_feed" width="700" style="border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3);">
-
-    <br><br>
-
-    <button onclick="startCam()" class="btn">▶ Start</button>
-    <button onclick="stopCam()" class="btn" style="background:red;">⛔ Stop</button>
-
-</div>
-
-<script>
-function startCam(){
-    document.getElementById("video").src = "/video_feed";
-}
-
-function stopCam(){
-    document.getElementById("video").src = "";
 }
 </script>
 
