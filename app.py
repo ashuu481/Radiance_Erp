@@ -20,15 +20,28 @@ current_status = "OK"   # 🔥 add this at top of file
 
 from flask import request, jsonify
 import base64
+from flask import Flask, render_template, request, jsonify
+import base64
 import cv2
 import numpy as np
+import os
+import time
 
+app = Flask(__name__)
+
+# Create defect folder
+os.makedirs("static/defects", exist_ok=True)
+
+@app.route('/')
+def home():
+    return render_template("camera.html")
+
+# 🔥 DETECTION API
 @app.route('/detect', methods=['POST'])
 def detect():
     try:
         data = request.json['image']
 
-        # decode image
         encoded = data.split(',')[1]
         img_bytes = base64.b64decode(encoded)
         np_arr = np.frombuffer(img_bytes, np.uint8)
@@ -36,10 +49,10 @@ def detect():
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # white area
+        # White area
         _, white = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 
-        # dark (holes)
+        # Dark spots (holes)
         _, dark = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
 
         holes = cv2.bitwise_and(white, dark)
@@ -51,14 +64,37 @@ def detect():
         for cnt in contours:
             if cv2.contourArea(cnt) > 100:
                 hole_count += 1
+                x, y, w, h = cv2.boundingRect(cnt)
+                cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
 
+        # Result
         if hole_count > 0:
-            return jsonify({"result": f"DEFECT ❌ ({hole_count})"})
+            result = f"DEFECT ❌ ({hole_count})"
+
+            # Save defect image
+            filename = f"static/defects/defect_{int(time.time())}.jpg"
+            cv2.imwrite(filename, frame)
+
         else:
-            return jsonify({"result": "OK ✅"})
+            result = "OK ✅"
+
+        # Convert image back
+        _, buffer = cv2.imencode('.jpg', frame)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        return jsonify({
+            "result": result,
+            "count": hole_count,
+            "image": "data:image/jpeg;base64," + img_base64
+        })
 
     except Exception as e:
-        return jsonify({"result": "Error"})
+        return jsonify({
+            "result": "Error",
+            "count": 0
+        })
+
+
 
 @app.route('/status')
 def status():

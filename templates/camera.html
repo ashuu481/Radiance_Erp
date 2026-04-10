@@ -1,19 +1,74 @@
-{% extends 'base.html' %}
-{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radiance Inspection</title>
 
-<h2 style="text-align:center;">📱 Live Inspection</h2>
+    <style>
+        body {
+            text-align:center;
+            font-family:Arial;
+            background:#0f172a;
+            color:white;
+        }
 
-<div style="text-align:center;">
-    <video id="video" autoplay playsinline width="300" style="border-radius:15px;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+        h2 {
+            font-size:28px;
+            margin-top:20px;
+        }
 
-    <br><br>
+        video, img {
+            border-radius:15px;
+            margin-top:10px;
+        }
 
-    <button onclick="startCamera()" class="btn">▶ Start</button>
-    <button onclick="stopCamera()" class="btn" style="background:red;">⛔ Stop</button>
+        button {
+            padding:10px 20px;
+            margin:10px;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+        }
 
-    <h3 id="status">Waiting...</h3>
-</div>
+        .start { background:green; color:white; }
+        .stop { background:red; color:white; }
+
+        .status-ok {
+            background:green;
+            padding:10px;
+            border-radius:10px;
+        }
+
+        .status-defect {
+            background:red;
+            padding:10px;
+            border-radius:10px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity:0.5; }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🔍 Radiance Live Inspection</h2>
+
+<video id="video" autoplay playsinline width="300"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<br>
+
+<img id="output" width="300">
+
+<br>
+
+<button class="start" onclick="startCamera()">▶ Start</button>
+<button class="stop" onclick="stopCamera()">⛔ Stop</button>
+
+<h3 id="status">Waiting...</h3>
+<h4>Total Defects: <span id="count">0</span></h4>
 
 <audio id="alarm" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
 
@@ -21,6 +76,7 @@
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
+
 let alarm = document.getElementById("alarm");
 
 let interval;
@@ -28,8 +84,8 @@ let lastState = "OK";
 
 async function startCamera(){
 
-    // 🔊 unlock audio (important for mobile)
-    alarm.play().then(() => {
+    // unlock sound for mobile
+    alarm.play().then(()=>{
         alarm.pause();
         alarm.currentTime = 0;
     });
@@ -40,7 +96,7 @@ async function startCamera(){
 
     video.srcObject = stream;
 
-    interval = setInterval(captureFrame, 2000);
+    interval = setInterval(captureFrame, 700);
 }
 
 function stopCamera(){
@@ -49,6 +105,7 @@ function stopCamera(){
 }
 
 function captureFrame(){
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -65,18 +122,26 @@ function captureFrame(){
     .then(data => {
 
         document.getElementById("status").innerText = data.result;
+        document.getElementById("count").innerText = data.count;
 
-        // 🔊 sound alert
-        if(data.result.includes("DEFECT") && lastState !== "DEFECT"){
+        document.getElementById("output").src = data.image;
+
+        // UI color change
+        if(data.result.includes("DEFECT")){
+            document.getElementById("status").className = "status-defect";
+
+            alarm.loop = true;
             alarm.play();
-            lastState = "DEFECT";
-        }
 
-        if(data.result.includes("OK")){
-            lastState = "OK";
+        } else {
+            document.getElementById("status").className = "status-ok";
+
+            alarm.pause();
+            alarm.currentTime = 0;
         }
     });
 }
 </script>
 
-{% endblock %}
+</body>
+</html>
