@@ -83,20 +83,24 @@ let interval;
 let lastState = "OK";
 
 async function startCamera(){
+    try {
 
-    // unlock sound for mobile
-    alarm.play().then(()=>{
-        alarm.pause();
-        alarm.currentTime = 0;
-    });
+        alert("Starting camera...");
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
-    });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
+        });
 
-    video.srcObject = stream;
+        video.srcObject = stream;
 
-    interval = setInterval(captureFrame, 700);
+        alert("Camera started!");
+
+        interval = setInterval(captureFrame, 700);
+
+    } catch(err){
+        alert("Camera error: " + err);
+        console.error(err);
+    }
 }
 
 function stopCamera(){
