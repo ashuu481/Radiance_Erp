@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<audio id="alarm" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+
+<h3 id="statusText">Waiting...</h3>
+
+<script>
+let alarm = document.getElementById("alarm");
+let lastState = "OK";
+
+function checkStatus(){
+    fetch('/status')
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("statusText").innerText = data.status;
+
+        if(data.status.includes("DEFECT") && lastState !== "DEFECT"){
+            alarm.play();
+            lastState = "DEFECT";
+        }
+
+        if(data.status.includes("OK")){
+            lastState = "OK";
+        }
+    });
+}
+
+// check every 1 sec
+setInterval(checkStatus, 1000);
+</script>
+<h2 style="text-align:center;">🎥 Live Quality Inspection</h2>
+
+<div style="text-align:center; margin-top:20px;">
+
+    <img id="video" src="/video_feed" width="700" style="border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3);">
+
+    <br><br>
+
+    <button onclick="startCam()" class="btn">▶ Start</button>
+    <button onclick="stopCam()" class="btn" style="background:red;">⛔ Stop</button>
+
+</div>
+
+<script>
+function startCam(){
+    document.getElementById("video").src = "/video_feed";
+}
+
+function stopCam(){
+    document.getElementById("video").src = "";
+}
+</script>
+
+{% endblock %}
