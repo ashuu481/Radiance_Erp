@@ -1,3 +1,4 @@
+from unittest import result
 from weakref import ref
 
 from flask import Flask, render_template, request, redirect, session, jsonify, Response
@@ -204,9 +205,11 @@ def defects():
     return render_template("defects.html", files=files)
 
 # 🔍 DETECTION
+
 @app.route('/detect', methods=['POST'])
 def detect():
     global last_saved
+    import requests
 
     try:
         data = request.json['image']
@@ -216,16 +219,21 @@ def detect():
         np_arr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
+        # 🎯 GRAYSCALE
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (5,5), 0)
 
-        # 🧠 STEP 1: NO PART CHECK
-        if np.mean(gray) > 230:
-            return jsonify({"result": "NO PART ❌", "count": 0})
+        # 🎯 ROI (CENTER AREA)
+        h, w = gray.shape
+        roi = gray[int(h*0.3):int(h*0.8), int(w*0.2):int(w*0.8)]
 
-        # 🧠 STEP 2: HOLE DETECTION
-        _, white = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
-        _, dark = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)
+        # 🧠 STEP 1: NO PART CHECK
+        if np.mean(roi) > 230:
+            return jsonify({"result": "NO PART ❌", "count": 0, "total": 0})
+
+        # 🧠 STEP 2: HOLE DETECTION (ON ROI)
+        _, white = cv2.threshold(roi, 190, 255, cv2.THRESH_BINARY)
+        _, dark = cv2.threshold(roi, 70, 255, cv2.THRESH_BINARY_INV)
 
         holes = cv2.bitwise_and(white, dark)
 
@@ -241,25 +249,38 @@ def detect():
 
             if 150 < area < 4000:
                 hole_count += 1
-                x,y,w,h = cv2.boundingRect(cnt)
-                cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
+
+                x,y,wc,hc = cv2.boundingRect(cnt)
+
+                # adjust ROI → full frame coordinates
+                x += int(w*0.2)
+                y += int(h*0.3)
+
+                cv2.rectangle(frame, (x,y), (x+wc,y+hc), (0,0,255), 2)
 
         # 🧠 STEP 3: REFERENCE MATCHING
         mismatch = False
+
         if reference is not None:
-            ref_resized = cv2.resize(reference, (frame.shape[1], frame.shape[0]))
-            diff = cv2.absdiff(ref_resized, frame)
-            diff_gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+            ref_gray = cv2.cvtColor(reference, cv2.COLOR_BGR2GRAY)
+            ref_gray = cv2.resize(ref_gray, (roi.shape[1], roi.shape[0]))
 
-            _, diff_thresh = cv2.threshold(diff_gray, 30, 255, cv2.THRESH_BINARY)
-            diff_area = np.sum(diff_thresh) / 255
+            res = cv2.matchTemplate(roi, ref_gray, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(res)
 
-            if diff_area > 3000:   # 🔥 FIXED (less sensitive)
+            if max_val < 0.7:
                 mismatch = True
 
         # 🧠 STEP 4: FINAL RESULT
         if hole_count > 0 or mismatch:
             result = f"DEFECT ❌ ({hole_count})"
+            confidence = "HIGH"
+
+            # 🔊 MACHINE TRIGGER
+            try:
+                requests.get("http://192.168.0.10/buzzer_on")
+            except:
+                pass
 
             if last_saved != "DEFECT":
                 filename = f"static/defects/defect_{int(time.time())}.jpg"
@@ -268,6 +289,7 @@ def detect():
 
         else:
             result = "OK ✅"
+            confidence = "SAFE"
             last_saved = "OK"
 
         # 📊 TOTAL DEFECTS
@@ -281,13 +303,13 @@ def detect():
             "result": result,
             "count": hole_count,
             "total": total_defects,
-            "image": "data:image/jpeg;base64," + img_base64
+            "image": "data:image/jpeg;base64," + img_base64,
+            "confidence": confidence
         })
 
     except Exception as e:
         print("ERROR:", e)
-        return jsonify({"result": "Error", "count": 0})
-
+        return jsonify({"result": "Error", "count": 0, "total": 0})
 
 
 

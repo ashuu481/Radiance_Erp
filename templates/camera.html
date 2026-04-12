@@ -1,85 +1,141 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radiance AI Inspection</title>
+<title>Radiance AI Inspection</title>
 
-    <style>
-        body {
-            text-align:center;
-            font-family:Arial;
-            background:#0f172a;
-            color:white;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 
-        h2 {
-            font-size:28px;
-            margin-top:20px;
-        }
+<style>
 
-        video, img {
-            border-radius:15px;
-            margin-top:10px;
-        }
+body {
+    margin:0;
+    font-family:'Poppins', sans-serif;
+    background: linear-gradient(135deg, #020617, #0f172a);
+    color:white;
+    text-align:center;
+}
 
-        button {
-            padding:10px 20px;
-            margin:10px;
-            border:none;
-            border-radius:10px;
-            cursor:pointer;
-        }
+/* 🔥 HEADER */
+.header {
+    font-size:28px;
+    font-weight:700;
+    margin-top:20px;
+    letter-spacing:1px;
+}
 
-        .start { background:green; color:white; }
-        .stop { background:red; color:white; }
+/* 🔥 GLASS CARD */
+.card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    border-radius:20px;
+    padding:20px;
+    margin:20px auto;
+    width:320px;
+    box-shadow:0 0 20px rgba(0,255,255,0.2);
+    animation: fadeIn 1s ease;
+}
 
-        .status-ok {
-            background:green;
-            padding:10px;
-            border-radius:10px;
-        }
+/* 🎥 VIDEO */
+video, img {
+    width:100%;
+    border-radius:15px;
+    margin-top:10px;
+}
 
-        .status-defect {
-            background:red;
-            padding:10px;
-            border-radius:10px;
-            animation: blink 1s infinite;
-        }
+/* 🔥 BUTTONS */
+button {
+    padding:12px 20px;
+    margin:10px;
+    border:none;
+    border-radius:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
 
-        .status-scan {
-            background:orange;
-            padding:10px;
-            border-radius:10px;
-        }
+.start {
+    background:linear-gradient(45deg,#22c55e,#4ade80);
+}
 
-        @keyframes blink {
-            50% { opacity:0.5; }
-        }
-    </style>
+.stop {
+    background:linear-gradient(45deg,#ef4444,#f87171);
+}
+
+button:hover {
+    transform:scale(1.1);
+}
+
+/* 🔥 STATUS */
+.status-ok {
+    background:#22c55e;
+    padding:10px;
+    border-radius:10px;
+    animation: glowGreen 1.5s infinite;
+}
+
+.status-defect {
+    background:#ef4444;
+    padding:10px;
+    border-radius:10px;
+    animation: blink 0.7s infinite;
+}
+
+.status-scan {
+    background:#facc15;
+    padding:10px;
+    border-radius:10px;
+    animation: pulse 1.5s infinite;
+}
+
+/* 🔥 ANIMATIONS */
+@keyframes blink {
+    50% { opacity:0.4; }
+}
+
+@keyframes pulse {
+    50% { transform:scale(1.05); }
+}
+
+@keyframes glowGreen {
+    0% { box-shadow:0 0 5px #22c55e; }
+    50% { box-shadow:0 0 20px #22c55e; }
+    100% { box-shadow:0 0 5px #22c55e; }
+}
+
+@keyframes fadeIn {
+    from { opacity:0; transform:translateY(20px); }
+    to { opacity:1; transform:translateY(0); }
+}
+
+</style>
 </head>
 
 <body>
 
-<h2>🏭 Radiance Smart Inspection</h2>
+<div class="header">🏭 Radiance Smart Inspection</div>
 
-<video id="video" autoplay playsinline width="300"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+<div class="card">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="output">
+</div>
 
-<br>
+<div>
+    <button class="start" onclick="startCamera()">▶ Start</button>
+    <button class="stop" onclick="stopCamera()">⛔ Stop</button>
+</div>
 
-<img id="output" width="300">
-
-<br>
-
-<button class="start" onclick="startCamera()">▶ Start</button>
-<button class="stop" onclick="stopCamera()">⛔ Stop</button>
-
-<h3 id="status">Starting...</h3>
-<h4>Current Defects: <span id="count">0</span></h4>
-<h4>Total Saved: <span id="total">0</span></h4>
+<div class="card">
+    <h3 id="status">Starting...</h3>
+    <h4>Defects: <span id="count">0</span></h4>
+    <h4>Total: <span id="total">0</span></h4>
+    <h4>Total Checked: <span id="checked">0</span></h4>
+</div>
 
 <audio id="alarm" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
 
 <script>
+let checked = 0;
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -92,42 +148,36 @@ let stableCount = 0;
 // 🚀 START CAMERA
 async function startCamera(){
     try {
-
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" }
         });
 
         video.srcObject = stream;
 
-        // 🔊 unlock audio for mobile
         alarm.play().then(()=>{
             alarm.pause();
             alarm.currentTime = 0;
         });
 
-        interval = setInterval(captureFrame, 1000);
+        interval = setInterval(captureFrame, 800);
 
     } catch(err){
         alert("Camera error: " + err.message);
-        console.error(err);
     }
 }
 
-// ⛔ STOP CAMERA
+// ⛔ STOP
 function stopCamera(){
     if(video.srcObject){
         video.srcObject.getTracks().forEach(track => track.stop());
     }
     clearInterval(interval);
-
-    alarm.pause();
-    alarm.currentTime = 0;
 }
 
-// 📸 CAPTURE FRAME
+// 📸 CAPTURE
 function captureFrame(){
 
-    if(!video.videoWidth) return;  // safety
+    if(!video.videoWidth) return;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -137,17 +187,19 @@ function captureFrame(){
     let image = canvas.toDataURL("image/jpeg", 0.5);
 
     fetch('/detect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: image })
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ image:image })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(res=>res.json())
+    .then(data=>{
+        checked++;
+        document.getElementById("checked").innerText = checked;
 
         let status = document.getElementById("status");
 
-        // 🎯 STATUS CONTROL
         if(data.result.includes("NO PART")){
+            navigator.vibrate([200,100,200]);
             status.innerText = "No Part ❌";
             status.className = "";
         }
@@ -164,19 +216,16 @@ function captureFrame(){
             status.className = "status-ok";
         }
 
-        // update counters
         document.getElementById("count").innerText = data.count || 0;
         document.getElementById("total").innerText = data.total || 0;
 
-        // show processed image
         if(data.image){
             document.getElementById("output").src = data.image;
         }
 
-        // 🔊 STABLE ALARM
+        // 🔊 ALARM
         if(data.result.includes("DEFECT")){
             stableCount++;
-
             if(stableCount >= 2){
                 alarm.loop = true;
                 alarm.play();
@@ -187,15 +236,8 @@ function captureFrame(){
             alarm.currentTime = 0;
         }
 
-    })
-    .catch(err => {
-        console.error("Fetch error:", err);
     });
 }
-
-// 🔥 AUTO START (optional)
-// window.onload = startCamera;
-
 </script>
 
 </body>

@@ -2,4 +2,9 @@
 
 {% for file in files %}
     <img src="/static/defects/{{file}}" width="200">
+    <div style="display:flex; flex-wrap:wrap; gap:15px;">
+{% for f in files %}
+    <img src="/static/defects/{{f}}" width="150" style="border-radius:10px;">
+{% endfor %}
+</div>
 {% endfor %}
