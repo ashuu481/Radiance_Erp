@@ -1,7 +1,8 @@
 let video, canvas, ctx;
+
 let expectedHoles = 8;
 let brightnessThreshold = 170;
-let minHoleArea = 300;
+let minHoleArea = 200;
 
 function startCamera() {
   video = document.getElementById('video');
@@ -12,10 +13,17 @@ function startCamera() {
     video: { facingMode: "environment" }
   }).then(stream => {
     video.srcObject = stream;
+  }).catch(err => {
+    alert("Camera error: " + err);
   });
 }
 
 function inspectNow() {
+  if (!video.videoWidth) {
+    alert("Camera not ready");
+    return;
+  }
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
@@ -33,29 +41,41 @@ function inspectNow() {
 
   const binary = new Uint8Array(W * H);
 
-  // Threshold + ROI
+  // STEP 1: Threshold + ROI
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
+
       const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
       if (dist > radius) continue;
 
       const i = (y * W + x) * 4;
-      const gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
       binary[y * W + x] = gray > brightnessThreshold ? 1 : 0;
+
+      // DEBUG VISUAL
+      const val = binary[y * W + x] ? 255 : 0;
+      data[i] = data[i + 1] = data[i + 2] = val;
     }
   }
 
+  ctx.putImageData(imageData, 0, 0);
+
+  // STEP 2: Blob detection
   const visited = new Uint8Array(W * H);
   let holes = 0;
 
   function floodFill(x, y) {
-    const queue = [[x, y]];
+    let stack = [[x, y]];
     let size = 0;
 
-    while (queue.length) {
-      const [cx2, cy2] = queue.shift();
-      const idx = cy2 * W + cx2;
+    while (stack.length) {
+      let [cx2, cy2] = stack.pop();
+      let idx = cy2 * W + cx2;
 
       if (visited[idx]) continue;
       visited[idx] = 1;
@@ -64,12 +84,12 @@ function inspectNow() {
 
       size++;
 
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
-        const nx = cx2 + dx;
-        const ny = cy2 + dy;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy]) => {
+        let nx = cx2 + dx;
+        let ny = cy2 + dy;
 
-        if(nx>=0 && ny>=0 && nx<W && ny<H){
-          queue.push([nx,ny]);
+        if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
+          stack.push([nx, ny]);
         }
       });
     }
@@ -79,19 +99,20 @@ function inspectNow() {
 
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const idx = y * W + x;
+      let idx = y * W + x;
 
       if (!visited[idx] && binary[idx] === 1) {
-        const size = floodFill(x, y);
+        let size = floodFill(x, y);
 
-        if (size >= minHoleArea) {
+        if (size > minHoleArea) {
           holes++;
         }
       }
     }
   }
 
-  const result = holes >= expectedHoles ? "PASS" : "FAIL";
+  // RESULT
+  let result = holes >= expectedHoles ? "PASS" : "FAIL";
 
   document.getElementById("result").innerText =
     `Holes: ${holes} | Result: ${result}`;

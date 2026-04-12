@@ -1,55 +1,29 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Scan QR</h3>
-
-<!-- QR SCANNER -->
-<video id="preview" width="100%"></video>
-
-<br><br>
-
 <h2>Mesh Inspection</h2>
 
-<!-- CAMERA -->
 <video id="video" autoplay playsinline style="width:100%;max-width:400px;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
 
 <br><br>
 
-<!-- BUTTON -->
 <button onclick="inspectNow()">🔍 Inspect</button>
 
 <h3 id="result">Waiting...</h3>
 
 <br>
 
-<!-- CONTROLS -->
-<div>
-  <label>Threshold:</label>
-  <input type="range" min="80" max="220" value="170"
-    oninput="brightnessThreshold=this.value">
-</div>
-
-<div>
-  <label>Min Hole Size:</label>
-  <input type="range" min="50" max="1000" value="300"
-    oninput="minHoleArea=this.value">
-</div>
+<label>Threshold:</label>
+<input type="range" min="80" max="220" value="170"
+oninput="brightnessThreshold=this.value">
 
 <br>
 
-<!-- QR SCRIPT -->
-<script src="https://unpkg.com/html5-qrcode"></script>
+<label>Min Hole Size:</label>
+<input type="range" min="50" max="1000" value="200"
+oninput="minHoleArea=this.value">
 
-<script>
-const qr = new Html5Qrcode("preview");
-
-qr.start({ facingMode: "environment" }, {}, text => {
-    window.location = "/inward?part=" + text;
-});
-</script>
-
-<!-- MESH DETECTION SCRIPT -->
 <script src="{{ url_for('static', filename='js/mesh_core.js') }}"></script>
 
 <script>
