@@ -187,30 +187,48 @@ def detect():
         np_arr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
+        # 🔥 Convert to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        _, white = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
-        _, dark = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        # 🔥 Blur to remove noise
+        gray = cv2.GaussianBlur(gray, (5,5), 0)
 
+        # 🔥 Improved thresholds (IMPORTANT FIX)
+        _, white = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+        _, dark = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
+
+        # 🔥 Detect holes only inside white region
         holes = cv2.bitwise_and(white, dark)
+
+        # 🔥 Clean noise
+        kernel = np.ones((3,3), np.uint8)
+        holes = cv2.morphologyEx(holes, cv2.MORPH_OPEN, kernel)
 
         contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         hole_count = 0
 
         for cnt in contours:
-            if cv2.contourArea(cnt) > 100:
+            area = cv2.contourArea(cnt)
+
+            # 🔥 Reduced area threshold (VERY IMPORTANT)
+            if area > 50:
                 hole_count += 1
                 x, y, w, h = cv2.boundingRect(cnt)
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
+        # 🔥 RESULT
         if hole_count > 0:
             result = f"DEFECT ❌ ({hole_count})"
+
+            # Save defect image
             filename = f"static/defects/defect_{int(time.time())}.jpg"
             cv2.imwrite(filename, frame)
+
         else:
             result = "OK ✅"
 
+        # 🔥 Convert back to image
         _, buffer = cv2.imencode('.jpg', frame)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
@@ -220,7 +238,8 @@ def detect():
             "image": "data:image/jpeg;base64," + img_base64
         })
 
-    except Exception:
+    except Exception as e:
+        print("ERROR:", e)
         return jsonify({"result": "Error", "count": 0})
 
 # ---------------- INWARD ----------------
