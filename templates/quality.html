@@ -1,23 +1,36 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Quality Check</h3>
+<h2>🔍 Quality Inspection</h2>
 
-<div class="card">
-<form method="post">
-<input name="part" placeholder="Part">
-<input name="status" placeholder="Pass / Fail">
-<button>Submit</button>
-</form>
+<div style="display:flex; gap:20px; flex-wrap:wrap;">
+
+    <div class="card">
+        <h3>Status</h3>
+        <p id="q_status">Waiting...</p>
+    </div>
+
+    <div class="card">
+        <h3>Defect Count</h3>
+        <p id="q_count">0</p>
+    </div>
+
+    <div class="card">
+        <h3>Total Inspected</h3>
+        <p id="q_total">0</p>
+    </div>
+
 </div>
 
-<div class="card">
-<table>
-<tr><th>Part</th><th>Status</th></tr>
-{% for i in data %}
-<tr><td>{{ i['part'] }}</td><td>{{ i['status'] }}</td></tr>
-{% endfor %}
-</table>
-</div>
+<style>
+.card{
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+    flex:1;
+    min-width:200px;
+    box-shadow:0 0 10px rgba(0,0,0,0.3);
+}
+</style>
 
 {% endblock %}

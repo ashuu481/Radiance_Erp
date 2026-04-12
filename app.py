@@ -178,34 +178,32 @@ def camera_page():
     return render_template('camera.html')
 
 # ---------------- AI DEFECT DETECTION ----------------
-os.makedirs("static/defects", exist_ok=True)
-
-
 from flask import Flask, render_template, request, jsonify
 import base64, cv2, numpy as np, os, time
 
 
 
-# folders
+# 📁 Create folder
 os.makedirs("static/defects", exist_ok=True)
 
-# load reference image once
+# 📸 Load reference image
 ref_path = "static/reference.jpg"
 reference = cv2.imread(ref_path) if os.path.exists(ref_path) else None
 
 last_saved = "OK"
 
+# 🏠 HOME
 @app.route('/')
 def home():
     return render_template("camera.html")
 
-# 🔥 DEFECT HISTORY
+# 📸 DEFECT HISTORY
 @app.route('/defects')
 def defects():
     files = os.listdir("static/defects")
     return render_template("defects.html", files=files)
 
-# 🔥 DETECTION API
+# 🔍 DETECTION
 @app.route('/detect', methods=['POST'])
 def detect():
     global last_saved
@@ -226,8 +224,8 @@ def detect():
             return jsonify({"result": "NO PART ❌", "count": 0})
 
         # 🧠 STEP 2: HOLE DETECTION
-        _, white = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
-        _, dark = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
+        _, white = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
+        _, dark = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)
 
         holes = cv2.bitwise_and(white, dark)
 
@@ -240,7 +238,8 @@ def detect():
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if 50 < area < 5000:
+
+            if 150 < area < 4000:
                 hole_count += 1
                 x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
@@ -255,14 +254,13 @@ def detect():
             _, diff_thresh = cv2.threshold(diff_gray, 30, 255, cv2.THRESH_BINARY)
             diff_area = np.sum(diff_thresh) / 255
 
-            if diff_area > 800:
+            if diff_area > 3000:   # 🔥 FIXED (less sensitive)
                 mismatch = True
 
         # 🧠 STEP 4: FINAL RESULT
         if hole_count > 0 or mismatch:
             result = f"DEFECT ❌ ({hole_count})"
 
-            # save only once
             if last_saved != "DEFECT":
                 filename = f"static/defects/defect_{int(time.time())}.jpg"
                 cv2.imwrite(filename, frame)
@@ -272,10 +270,10 @@ def detect():
             result = "OK ✅"
             last_saved = "OK"
 
-        # total defects count
+        # 📊 TOTAL DEFECTS
         total_defects = len(os.listdir("static/defects"))
 
-        # convert image
+        # 🖼 Convert image
         _, buffer = cv2.imencode('.jpg', frame)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
@@ -289,7 +287,10 @@ def detect():
     except Exception as e:
         print("ERROR:", e)
         return jsonify({"result": "Error", "count": 0})
-    
+
+
+
+
 
 
    
