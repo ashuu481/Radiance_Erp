@@ -1,4 +1,7 @@
+from weakref import ref
+
 from flask import Flask, render_template, request, redirect, session, jsonify, Response
+from matplotlib.pyplot import gray
 import sqlite3, os, qrcode
 from datetime import datetime
 import pandas as pd
@@ -177,8 +180,36 @@ def camera_page():
 # ---------------- AI DEFECT DETECTION ----------------
 os.makedirs("static/defects", exist_ok=True)
 
+
+from flask import Flask, render_template, request, jsonify
+import base64, cv2, numpy as np, os, time
+
+
+
+# folders
+os.makedirs("static/defects", exist_ok=True)
+
+# load reference image once
+ref_path = "static/reference.jpg"
+reference = cv2.imread(ref_path) if os.path.exists(ref_path) else None
+
+last_saved = "OK"
+
+@app.route('/')
+def home():
+    return render_template("camera.html")
+
+# 🔥 DEFECT HISTORY
+@app.route('/defects')
+def defects():
+    files = os.listdir("static/defects")
+    return render_template("defects.html", files=files)
+
+# 🔥 DETECTION API
 @app.route('/detect', methods=['POST'])
 def detect():
+    global last_saved
+
     try:
         data = request.json['image']
         encoded = data.split(',')[1]
@@ -190,60 +221,78 @@ def detect():
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (5,5), 0)
 
-        # 🔥 Adaptive threshold (better than fixed)
-        thresh = cv2.adaptiveThreshold(
-            gray, 255,
-            cv2.ADAPTIVE_THRESH_MEAN_C,
-            cv2.THRESH_BINARY_INV,
-            11, 2
-        )
+        # 🧠 STEP 1: NO PART CHECK
+        if np.mean(gray) > 230:
+            return jsonify({"result": "NO PART ❌", "count": 0})
 
-        # 🔥 Focus only on center (ignore background noise)
-        h, w = thresh.shape
-        mask = np.zeros_like(thresh)
-        cv2.rectangle(mask, (int(w*0.2), int(h*0.2)),
-                             (int(w*0.8), int(h*0.8)), 255, -1)
+        # 🧠 STEP 2: HOLE DETECTION
+        _, white = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+        _, dark = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
 
-        thresh = cv2.bitwise_and(thresh, mask)
+        holes = cv2.bitwise_and(white, dark)
 
-        # Clean noise
         kernel = np.ones((3,3), np.uint8)
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        holes = cv2.morphologyEx(holes, cv2.MORPH_OPEN, kernel)
 
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         hole_count = 0
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-
-            if 80 < area < 5000:   # 🔥 controlled detection
+            if 50 < area < 5000:
                 hole_count += 1
-                x, y, w, h = cv2.boundingRect(cnt)
+                x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
 
-        # 🔥 STABLE RESULT LOGIC
-        if hole_count >= 1:
+        # 🧠 STEP 3: REFERENCE MATCHING
+        mismatch = False
+        if reference is not None:
+            ref_resized = cv2.resize(reference, (frame.shape[1], frame.shape[0]))
+            diff = cv2.absdiff(ref_resized, frame)
+            diff_gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+            _, diff_thresh = cv2.threshold(diff_gray, 30, 255, cv2.THRESH_BINARY)
+            diff_area = np.sum(diff_thresh) / 255
+
+            if diff_area > 800:
+                mismatch = True
+
+        # 🧠 STEP 4: FINAL RESULT
+        if hole_count > 0 or mismatch:
             result = f"DEFECT ❌ ({hole_count})"
 
-            filename = f"static/defects/defect_{int(time.time())}.jpg"
-            cv2.imwrite(filename, frame)
-        else:
-            result = "SCANNING..."   # 🔥 NOT OK immediately
+            # save only once
+            if last_saved != "DEFECT":
+                filename = f"static/defects/defect_{int(time.time())}.jpg"
+                cv2.imwrite(filename, frame)
+                last_saved = "DEFECT"
 
-        # Convert image
+        else:
+            result = "OK ✅"
+            last_saved = "OK"
+
+        # total defects count
+        total_defects = len(os.listdir("static/defects"))
+
+        # convert image
         _, buffer = cv2.imencode('.jpg', frame)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
         return jsonify({
             "result": result,
             "count": hole_count,
+            "total": total_defects,
             "image": "data:image/jpeg;base64," + img_base64
         })
 
     except Exception as e:
         print("ERROR:", e)
         return jsonify({"result": "Error", "count": 0})
+    
+
+
+   
 # ---------------- INWARD ----------------
 @app.route('/inward', methods=['GET', 'POST'])
 def inward():

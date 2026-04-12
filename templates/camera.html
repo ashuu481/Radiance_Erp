@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radiance Inspection</title>
+    <title>Radiance AI Inspection</title>
 
     <style>
         body {
@@ -45,6 +45,12 @@
             animation: blink 1s infinite;
         }
 
+        .status-scan {
+            background:orange;
+            padding:10px;
+            border-radius:10px;
+        }
+
         @keyframes blink {
             50% { opacity:0.5; }
         }
@@ -53,7 +59,7 @@
 
 <body>
 
-<h2>🔍 Radiance Live Inspection</h2>
+<h2>🏭 Radiance Smart Inspection</h2>
 
 <video id="video" autoplay playsinline width="300"></video>
 <canvas id="canvas" style="display:none;"></canvas>
@@ -67,8 +73,9 @@
 <button class="start" onclick="startCamera()">▶ Start</button>
 <button class="stop" onclick="stopCamera()">⛔ Stop</button>
 
-<h3 id="status">Waiting...</h3>
-<h4>Total Defects: <span id="count">0</span></h4>
+<h3 id="status">Starting...</h3>
+<h4>Current Defects: <span id="count">0</span></h4>
+<h4>Total Saved: <span id="total">0</span></h4>
 
 <audio id="alarm" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
 
@@ -80,12 +87,11 @@ let ctx = canvas.getContext("2d");
 let alarm = document.getElementById("alarm");
 
 let interval;
-let stableCount = 0;   // 🔥 stability control
+let stableCount = 0;
 
+// 🚀 START CAMERA
 async function startCamera(){
     try {
-
-        alert("Starting camera...");
 
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" }
@@ -93,22 +99,35 @@ async function startCamera(){
 
         video.srcObject = stream;
 
-        alert("Camera started!");
+        // 🔊 unlock audio for mobile
+        alarm.play().then(()=>{
+            alarm.pause();
+            alarm.currentTime = 0;
+        });
 
-        interval = setInterval(captureFrame, 700);
+        interval = setInterval(captureFrame, 1000);
 
     } catch(err){
-        alert("Camera error: " + err);
+        alert("Camera error: " + err.message);
         console.error(err);
     }
 }
 
+// ⛔ STOP CAMERA
 function stopCamera(){
-    video.srcObject.getTracks().forEach(track => track.stop());
+    if(video.srcObject){
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
     clearInterval(interval);
+
+    alarm.pause();
+    alarm.currentTime = 0;
 }
 
+// 📸 CAPTURE FRAME
 function captureFrame(){
+
+    if(!video.videoWidth) return;  // safety
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -127,37 +146,41 @@ function captureFrame(){
 
         let status = document.getElementById("status");
 
-        // 🔥 STATUS CONTROL (NO FALSE OK)
-        if(data.result.includes("DEFECT")){
+        // 🎯 STATUS CONTROL
+        if(data.result.includes("NO PART")){
+            status.innerText = "No Part ❌";
+            status.className = "";
+        }
+        else if(data.result.includes("DEFECT")){
             status.innerText = data.result;
             status.className = "status-defect";
         }
-        else if(data.result === "SCANNING..."){
+        else if(data.result.includes("SCANNING")){
             status.innerText = "Scanning...";
-            status.className = "";
+            status.className = "status-scan";
         }
         else{
             status.innerText = "OK ✅";
             status.className = "status-ok";
         }
 
-        // Update count
-        document.getElementById("count").innerText = data.count;
+        // update counters
+        document.getElementById("count").innerText = data.count || 0;
+        document.getElementById("total").innerText = data.total || 0;
 
-        // Show processed image
+        // show processed image
         if(data.image){
             document.getElementById("output").src = data.image;
         }
 
-        // 🔊 STABLE ALARM LOGIC
+        // 🔊 STABLE ALARM
         if(data.result.includes("DEFECT")){
             stableCount++;
 
-            if(stableCount >= 2){   // 🔥 confirm defect
+            if(stableCount >= 2){
                 alarm.loop = true;
                 alarm.play();
             }
-
         } else {
             stableCount = 0;
             alarm.pause();
@@ -169,6 +192,10 @@ function captureFrame(){
         console.error("Fetch error:", err);
     });
 }
+
+// 🔥 AUTO START (optional)
+// window.onload = startCamera;
+
 </script>
 
 </body>
