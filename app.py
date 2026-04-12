@@ -187,48 +187,51 @@ def detect():
         np_arr = np.frombuffer(img_bytes, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-        # 🔥 Convert to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # 🔥 Blur to remove noise
         gray = cv2.GaussianBlur(gray, (5,5), 0)
 
-        # 🔥 Improved thresholds (IMPORTANT FIX)
-        _, white = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
-        _, dark = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
+        # 🔥 Adaptive threshold (better than fixed)
+        thresh = cv2.adaptiveThreshold(
+            gray, 255,
+            cv2.ADAPTIVE_THRESH_MEAN_C,
+            cv2.THRESH_BINARY_INV,
+            11, 2
+        )
 
-        # 🔥 Detect holes only inside white region
-        holes = cv2.bitwise_and(white, dark)
+        # 🔥 Focus only on center (ignore background noise)
+        h, w = thresh.shape
+        mask = np.zeros_like(thresh)
+        cv2.rectangle(mask, (int(w*0.2), int(h*0.2)),
+                             (int(w*0.8), int(h*0.8)), 255, -1)
 
-        # 🔥 Clean noise
+        thresh = cv2.bitwise_and(thresh, mask)
+
+        # Clean noise
         kernel = np.ones((3,3), np.uint8)
-        holes = cv2.morphologyEx(holes, cv2.MORPH_OPEN, kernel)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
-        contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         hole_count = 0
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
 
-            # 🔥 Reduced area threshold (VERY IMPORTANT)
-            if area > 50:
+            if 80 < area < 5000:   # 🔥 controlled detection
                 hole_count += 1
                 x, y, w, h = cv2.boundingRect(cnt)
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
+                cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,255), 2)
 
-        # 🔥 RESULT
-        if hole_count > 0:
+        # 🔥 STABLE RESULT LOGIC
+        if hole_count >= 1:
             result = f"DEFECT ❌ ({hole_count})"
 
-            # Save defect image
             filename = f"static/defects/defect_{int(time.time())}.jpg"
             cv2.imwrite(filename, frame)
-
         else:
-            result = "OK ✅"
+            result = "SCANNING..."   # 🔥 NOT OK immediately
 
-        # 🔥 Convert back to image
+        # Convert image
         _, buffer = cv2.imencode('.jpg', frame)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
@@ -241,7 +244,6 @@ def detect():
     except Exception as e:
         print("ERROR:", e)
         return jsonify({"result": "Error", "count": 0})
-
 # ---------------- INWARD ----------------
 @app.route('/inward', methods=['GET', 'POST'])
 def inward():

@@ -80,7 +80,7 @@ let ctx = canvas.getContext("2d");
 let alarm = document.getElementById("alarm");
 
 let interval;
-let lastState = "OK";
+let stableCount = 0;   // 🔥 stability control
 
 async function startCamera(){
     try {
@@ -125,24 +125,48 @@ function captureFrame(){
     .then(res => res.json())
     .then(data => {
 
-        document.getElementById("status").innerText = data.result;
+        let status = document.getElementById("status");
+
+        // 🔥 STATUS CONTROL (NO FALSE OK)
+        if(data.result.includes("DEFECT")){
+            status.innerText = data.result;
+            status.className = "status-defect";
+        }
+        else if(data.result === "SCANNING..."){
+            status.innerText = "Scanning...";
+            status.className = "";
+        }
+        else{
+            status.innerText = "OK ✅";
+            status.className = "status-ok";
+        }
+
+        // Update count
         document.getElementById("count").innerText = data.count;
 
-        document.getElementById("output").src = data.image;
+        // Show processed image
+        if(data.image){
+            document.getElementById("output").src = data.image;
+        }
 
-        // UI color change
+        // 🔊 STABLE ALARM LOGIC
         if(data.result.includes("DEFECT")){
-            document.getElementById("status").className = "status-defect";
+            stableCount++;
 
-            alarm.loop = true;
-            alarm.play();
+            if(stableCount >= 2){   // 🔥 confirm defect
+                alarm.loop = true;
+                alarm.play();
+            }
 
         } else {
-            document.getElementById("status").className = "status-ok";
-
+            stableCount = 0;
             alarm.pause();
             alarm.currentTime = 0;
         }
+
+    })
+    .catch(err => {
+        console.error("Fetch error:", err);
     });
 }
 </script>
