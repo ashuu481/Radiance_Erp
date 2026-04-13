@@ -134,6 +134,36 @@ def quality():
     conn.close()
 
     return render_template("quality.html", data=data)
+from flask import send_file
+import pandas as pd
+import io
+
+@app.route('/export_excel')
+def export_excel():
+    try:
+        # 🔥 Example data (REPLACE with your DB later)
+        data = [
+            {"Part": "Part A", "Quantity": 10},
+            {"Part": "Part B", "Quantity": 5},
+        ]
+
+        df = pd.DataFrame(data)
+
+        # Create Excel in memory
+        output = io.BytesIO()
+        df.to_excel(output, index=False)
+        output.seek(0)
+
+        return send_file(
+            output,
+            download_name="report.xlsx",
+            as_attachment=True,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    except Exception as e:
+        print("EXPORT ERROR:", e)
+        return "Error exporting file"
 # ---------------- LOGIN (ROOT FIXED) ----------------
 @app.route('/', methods=['GET', 'POST'])
 def login():

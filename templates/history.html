@@ -26,18 +26,6 @@
 <h3>History</h3>
 
 <div class="card">
-<table>
-<tr><th>Part</th><th>Qty</th><th>Action</th><th>User</th><th>Date</th></tr>
-{% for i in data %}
-<tr>
-<td>{{ i['part'] }}</td>
-<td>{{ i['qty'] }}</td>
-<td>{{ i['action'] }}</td>
-<td>{{ i['user'] }}</td>
-<td>{{ i['date'] }}</td>
-</tr>
-{% endfor %}
-</table>
 </div>
 
 {% endblock %}
