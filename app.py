@@ -75,7 +75,28 @@ def init_db():
     conn.close()
 
 init_db()
+@app.route('/assembly', methods=['GET', 'POST'])
+def assembly():
+    if 'user' not in session:
+        return redirect('/')
 
+    conn = get_db()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        part = request.form.get('part')
+        qty = request.form.get('qty')
+
+        if part and qty:
+            cur.execute("INSERT INTO assembly(part, qty) VALUES (?,?)", (part, qty))
+            cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+                        (part, qty, "ASSEMBLY", session['user'], str(datetime.now())))
+            conn.commit()
+
+    data = cur.execute("SELECT * FROM assembly").fetchall()
+    conn.close()
+
+    return render_template("assembly.html", data=data)
 # ---------------- AI SETUP ----------------
 os.makedirs("static/defects", exist_ok=True)
 reference = cv2.imread("static/reference.jpg") if os.path.exists("static/reference.jpg") else None
@@ -324,7 +345,28 @@ def detect():
     except Exception as e:
         print(e)
         return jsonify({"result": "Error", "count": 0})
+@app.route('/quality', methods=['GET', 'POST'])
+def quality():
+    if 'user' not in session:
+        return redirect('/')
 
+    conn = get_db()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        part = request.form.get('part')
+        status = request.form.get('status')
+
+        if part and status:
+            cur.execute("INSERT INTO quality(part, status) VALUES (?,?)", (part, status))
+            cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
+                        (part, 0, f"QUALITY-{status}", session['user'], str(datetime.now())))
+            conn.commit()
+
+    data = cur.execute("SELECT * FROM quality").fetchall()
+    conn.close()
+
+    return render_template("quality.html", data=data)
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():
