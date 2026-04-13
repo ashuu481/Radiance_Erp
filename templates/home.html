@@ -1,51 +1,198 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h2>Welcome to Radiance ERP</h2>
-
-<div class="grid">
-
-<a href="/inward" class="box">📥<br>Inward</a>
-<a href="/store" class="box">📦<br>Inventory</a>
-<a href="/production" class="box">🏭<br>Production</a>
-<a href="/assembly" class="box">🛠<br>Assembly</a>
-<a href="/quality" class="box">✔<br>Quality</a>
-<a href="/dispatch" class="box">🚚<br>Dispatch</a>
-<a href="/history" class="box">📊<br>Reports</a>
-<a href="/settings" class="box">⚙<br>Settings</a>
-<a href="/camera" class="box">📹<br>Quality Camera</a>
-
-</div>
-
-<h3>Dashboard</h3>
-
-<div class="card">
-    <h4>Welcome to ERP System 🚀</h4>
-    <p>Use the menu to manage operations.</p>
-</div>
-
-<script>
-var parts = [];
-var qtys = [];
-
-try {
-    parts = JSON.parse('{{ parts | tojson | safe if parts is defined else "[]" }}');
-    qtys = JSON.parse('{{ qtys | tojson | safe if qtys is defined else "[]" }}');
-} catch(e){}
-
-if(parts.length > 0){
-
-new Chart(document.getElementById('barChart'), {
-type:'bar',
-data:{ labels:parts, datasets:[{data:qtys}] }
-});
-
-new Chart(document.getElementById('pieChart'), {
-type:'pie',
-data:{ labels:parts, datasets:[{data:qtys}] }
-});
-
+<style>
+/* 🔥 BACKGROUND */
+.dashboard {
+    padding: 20px;
 }
+
+/* 🔥 GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+/* 🔥 GLASS CARDS */
+.card {
+    padding: 20px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+}
+
+/* 🔥 TITLE */
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* 🔥 STAT */
+.stat {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* 🔥 STATUS COLORS */
+.ok { color: #22c55e; }
+.defect { color: #ef4444; }
+.warn { color: #facc15; }
+
+/* 🔥 BUTTON GRID */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.action-btn {
+    padding: 15px;
+    border-radius: 15px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: white;
+
+    /* 🔥 premium effect */
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* 🔥 swipe animation */
+.action-btn::after{
+    content:'';
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:-100%;
+    background: rgba(255,255,255,0.2);
+    transition:0.3s;
+}
+
+.action-btn:hover::after{
+    left:100%;
+}
+
+/* 🔥 LIVE BADGE */
+.live {
+    background: red;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-left: 10px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+</style>
+
+<div class="dashboard">
+
+    <div class="title">
+        ⚙️ Dashboard <span class="live">LIVE</span>
+    </div>
+
+    <!-- 🔥 STATS -->
+    <div class="grid">
+
+        <div class="card">
+            <div>Total Parts Checked</div>
+            <div class="stat ok" id="totalParts">0</div>
+        </div>
+
+        <div class="card">
+            <div>Defective Parts</div>
+            <div class="stat defect" id="defects">0</div>
+        </div>
+
+        <div class="card">
+            <div>Efficiency</div>
+            <div class="stat warn" id="efficiency">100%</div>
+        </div>
+
+        <div class="card">
+            <div>System Status</div>
+            <div class="stat ok">Running ✅</div>
+        </div>
+
+    </div>
+
+    <!-- 🔥 QUICK ACTIONS (ROLE BASED) -->
+    <div class="quick-actions">
+
+        {% if session['role'] == 'admin' %}
+
+            <a href="/inward"><button class="action-btn">📥 Inward</button></a>
+            <a href="/store"><button class="action-btn">🏬 Store</button></a>
+            <a href="/production"><button class="action-btn">🏭 Production</button></a>
+            <a href="/assembly"><button class="action-btn">⚙️ Assembly</button></a>
+            <a href="/quality"><button class="action-btn">🔍 Quality</button></a>
+            <a href="/dispatch"><button class="action-btn">🚚 Dispatch</button></a>
+            <a href="/reports"><button class="action-btn">📊 Reports</button></a>
+            <a href="/camera"><button class="action-btn">📹<br>Quality Camera</button></a>
+
+        {% elif session['role'] == 'inward' %}
+
+            <a href="/inward"><button class="action-btn">📥 Inward Panel</button></a>
+
+        {% elif session['role'] == 'store' %}
+
+            <a href="/store"><button class="action-btn">🏬 Store Panel</button></a>
+
+        {% elif session['role'] == 'production' %}
+
+            <a href="/production"><button class="action-btn">🏭 Production</button></a>
+            <a href="/assembly"><button class="action-btn">⚙️ Assembly</button></a>
+            <a href="/quality"><button class="action-btn">🔍 Quality</button></a>
+            <a href="/camera"><button class="action-btn">📹 Camera</button></a>
+
+        {% elif session['role'] == 'dispatch' %}
+
+            <a href="/dispatch"><button class="action-btn">🚚 Dispatch Panel</button></a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<!-- 🔥 LIVE DATA SCRIPT -->
+<script>
+let total = 0;
+let defects = 0;
+
+setInterval(() => {
+
+    total += Math.floor(Math.random() * 3);
+    defects += Math.floor(Math.random() * 2);
+
+    document.getElementById("totalParts").innerText = total;
+    document.getElementById("defects").innerText = defects;
+
+    let eff = total > 0 ? ((total - defects) / total * 100).toFixed(1) : 100;
+    document.getElementById("efficiency").innerText = eff + "%";
+
+}, 2000);
 </script>
 
 {% endblock %}

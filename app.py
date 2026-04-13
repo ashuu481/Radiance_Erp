@@ -1,15 +1,8 @@
-from unittest import result
-from weakref import ref
-
-from flask import Flask, render_template, request, redirect, session, jsonify, Response
-from matplotlib.pyplot import gray
+from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 import sqlite3, os, qrcode
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
-import base64
-import cv2
-import numpy as np
-import time
+import base64, cv2, numpy as np, time
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -46,15 +39,6 @@ def init_db():
         type TEXT
     )""")
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS history(
-        id INTEGER PRIMARY KEY,
-        part TEXT,
-        qty INTEGER,
-        action TEXT,
-        user TEXT,
-        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )""")
-
     cur.execute("""CREATE TABLE IF NOT EXISTS assembly(
         id INTEGER PRIMARY KEY,
         part TEXT,
@@ -65,6 +49,15 @@ def init_db():
         id INTEGER PRIMARY KEY,
         part TEXT,
         status TEXT
+    )""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS history(
+        id INTEGER PRIMARY KEY,
+        part TEXT,
+        qty INTEGER,
+        action TEXT,
+        user TEXT,
+        date TEXT
     )""")
 
     users = [
@@ -82,89 +75,13 @@ def init_db():
     conn.close()
 
 init_db()
-@app.route('/assembly', methods=['GET', 'POST'])
-def assembly():
-    if 'user' not in session:
-        return redirect('/')
 
-    conn = get_db()
-    cur = conn.cursor()
+# ---------------- AI SETUP ----------------
+os.makedirs("static/defects", exist_ok=True)
+reference = cv2.imread("static/reference.jpg") if os.path.exists("static/reference.jpg") else None
+last_saved = "OK"
 
-    if request.method == 'POST':
-        part = request.form.get('part')
-        qty = request.form.get('qty')
-
-        if part and qty:
-            cur.execute(
-                "INSERT INTO assembly(part, qty) VALUES (?,?)",
-                (part, qty)
-            )
-
-            cur.execute(
-                "INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
-                (part, qty, "ASSEMBLY", session['user'], datetime.now())
-            )
-
-            conn.commit()
-
-    data = cur.execute("SELECT * FROM assembly").fetchall()
-    conn.close()
-
-    return render_template("assembly.html", data=data)
-@app.route('/quality', methods=['GET', 'POST'])
-def quality():
-    if 'user' not in session:
-        return redirect('/')
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    if request.method == 'POST':
-        part = request.form.get('part')
-        status = request.form.get('status')
-
-        if part and status:
-            cur.execute(
-                "INSERT INTO quality(part, status) VALUES (?,?)",
-                (part, status)
-            )
-            conn.commit()
-
-    data = cur.execute("SELECT * FROM quality").fetchall()
-    conn.close()
-
-    return render_template("quality.html", data=data)
-from flask import send_file
-import pandas as pd
-import io
-
-@app.route('/export_excel')
-def export_excel():
-    try:
-        # 🔥 Example data (REPLACE with your DB later)
-        data = [
-            {"Part": "Part A", "Quantity": 10},
-            {"Part": "Part B", "Quantity": 5},
-        ]
-
-        df = pd.DataFrame(data)
-
-        # Create Excel in memory
-        output = io.BytesIO()
-        df.to_excel(output, index=False)
-        output.seek(0)
-
-        return send_file(
-            output,
-            download_name="report.xlsx",
-            as_attachment=True,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-    except Exception as e:
-        print("EXPORT ERROR:", e)
-        return "Error exporting file"
-# ---------------- LOGIN (ROOT FIXED) ----------------
+# ---------------- LOGIN ----------------
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -180,7 +97,11 @@ def login():
         if user:
             session['user'] = u
             session['role'] = user['role']
-            return redirect('/dashboard')
+
+            role = user['role']
+            if role == 'admin':
+                return redirect('/dashboard')
+            return redirect(f'/{role}')
 
     return render_template("login.html")
 
@@ -196,161 +117,13 @@ def dashboard():
     rows = cur.fetchall()
     conn.close()
 
-    parts = [r['part'] for r in rows]
-    qtys = [r['qty'] for r in rows]
+    return render_template("home.html", data=rows)
 
-    return render_template("home.html", parts=parts, qtys=qtys)
-
-# ---------------- CAMERA PAGE ----------------
-@app.route('/camera')
-def camera_page():
-    if 'user' not in session:
-        return redirect('/')
-    return render_template('camera.html')
-
-# ---------------- AI DEFECT DETECTION ----------------
-from flask import Flask, render_template, request, jsonify
-import base64, cv2, numpy as np, os, time
-
-
-
-# 📁 Create folder
-os.makedirs("static/defects", exist_ok=True)
-
-# 📸 Load reference image
-ref_path = "static/reference.jpg"
-reference = cv2.imread(ref_path) if os.path.exists(ref_path) else None
-
-last_saved = "OK"
-
-# 🏠 HOME
-@app.route('/')
-def home():
-    return render_template("camera.html")
-
-# 📸 DEFECT HISTORY
-@app.route('/defects')
-def defects():
-    files = os.listdir("static/defects")
-    return render_template("defects.html", files=files)
-
-# 🔍 DETECTION
-
-@app.route('/detect', methods=['POST'])
-def detect():
-    global last_saved
-    import requests
-
-    try:
-        data = request.json['image']
-        encoded = data.split(',')[1]
-
-        img_bytes = base64.b64decode(encoded)
-        np_arr = np.frombuffer(img_bytes, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-        # 🎯 GRAYSCALE
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (5,5), 0)
-
-        # 🎯 ROI (CENTER AREA)
-        h, w = gray.shape
-        roi = gray[int(h*0.3):int(h*0.8), int(w*0.2):int(w*0.8)]
-
-        # 🧠 STEP 1: NO PART CHECK
-        if np.mean(roi) > 230:
-            return jsonify({"result": "NO PART ❌", "count": 0, "total": 0})
-
-        # 🧠 STEP 2: HOLE DETECTION (ON ROI)
-        _, white = cv2.threshold(roi, 190, 255, cv2.THRESH_BINARY)
-        _, dark = cv2.threshold(roi, 70, 255, cv2.THRESH_BINARY_INV)
-
-        holes = cv2.bitwise_and(white, dark)
-
-        kernel = np.ones((3,3), np.uint8)
-        holes = cv2.morphologyEx(holes, cv2.MORPH_OPEN, kernel)
-
-        contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        hole_count = 0
-
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-
-            if 150 < area < 4000:
-                hole_count += 1
-
-                x,y,wc,hc = cv2.boundingRect(cnt)
-
-                # adjust ROI → full frame coordinates
-                x += int(w*0.2)
-                y += int(h*0.3)
-
-                cv2.rectangle(frame, (x,y), (x+wc,y+hc), (0,0,255), 2)
-
-        # 🧠 STEP 3: REFERENCE MATCHING
-        mismatch = False
-
-        if reference is not None:
-            ref_gray = cv2.cvtColor(reference, cv2.COLOR_BGR2GRAY)
-            ref_gray = cv2.resize(ref_gray, (roi.shape[1], roi.shape[0]))
-
-            res = cv2.matchTemplate(roi, ref_gray, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, _ = cv2.minMaxLoc(res)
-
-            if max_val < 0.7:
-                mismatch = True
-
-        # 🧠 STEP 4: FINAL RESULT
-        if hole_count > 0 or mismatch:
-            result = f"DEFECT ❌ ({hole_count})"
-            confidence = "HIGH"
-
-            # 🔊 MACHINE TRIGGER
-            try:
-                requests.get("http://192.168.0.10/buzzer_on")
-            except:
-                pass
-
-            if last_saved != "DEFECT":
-                filename = f"static/defects/defect_{int(time.time())}.jpg"
-                cv2.imwrite(filename, frame)
-                last_saved = "DEFECT"
-
-        else:
-            result = "OK ✅"
-            confidence = "SAFE"
-            last_saved = "OK"
-
-        # 📊 TOTAL DEFECTS
-        total_defects = len(os.listdir("static/defects"))
-
-        # 🖼 Convert image
-        _, buffer = cv2.imencode('.jpg', frame)
-        img_base64 = base64.b64encode(buffer).decode('utf-8')
-
-        return jsonify({
-            "result": result,
-            "count": hole_count,
-            "total": total_defects,
-            "image": "data:image/jpeg;base64," + img_base64,
-            "confidence": confidence
-        })
-
-    except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"result": "Error", "count": 0, "total": 0})
-
-
-
-
-
-   
 # ---------------- INWARD ----------------
 @app.route('/inward', methods=['GET', 'POST'])
 def inward():
     if session.get('role') not in ['admin', 'inward']:
-        return "Access Denied"
+        return "Access Denied ❌"
 
     conn = get_db()
     cur = conn.cursor()
@@ -362,8 +135,8 @@ def inward():
 
         cur.execute("INSERT INTO inward(part, qty, type) VALUES (?,?,?)", (part, qty, t))
 
-        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
-                    (part, qty, "INWARD", session['user'], datetime.now()))
+        cur.execute("INSERT INTO history VALUES (NULL,?,?,?,?,?)",
+                    (part, qty, "INWARD", session['user'], str(datetime.now())))
 
         cur.execute("SELECT qty FROM stock WHERE part=?", (part,))
         data = cur.fetchone()
@@ -375,8 +148,7 @@ def inward():
 
         conn.commit()
 
-    cur.execute("SELECT * FROM inward")
-    data = cur.fetchall()
+    data = cur.execute("SELECT * FROM inward").fetchall()
     conn.close()
 
     return render_template("inward.html", data=data)
@@ -389,13 +161,10 @@ def store():
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM stock")
-    data = cur.fetchall()
-
-    low = [i['part'] for i in data if i['qty'] <= i['min_qty']]
-
+    data = cur.execute("SELECT * FROM stock").fetchall()
     conn.close()
-    return render_template("store.html", data=data, low=low)
+
+    return render_template("store.html", data=data)
 
 # ---------------- PRODUCTION ----------------
 @app.route('/production', methods=['GET', 'POST'])
@@ -421,8 +190,8 @@ def production():
         else:
             msg = "Not enough stock"
 
-        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
-                    (part, qty, "PRODUCTION", session['user'], datetime.now()))
+        cur.execute("INSERT INTO history VALUES (NULL,?,?,?,?,?)",
+                    (part, qty, "PRODUCTION", session['user'], str(datetime.now())))
 
         conn.commit()
         conn.close()
@@ -449,43 +218,112 @@ def dispatch():
 
         if s and s['qty'] >= qty:
             cur.execute("UPDATE stock SET qty=qty-? WHERE part=?", (qty, part))
-            msg = "Dispatched Successfully"
+            msg = "Dispatched"
         else:
             msg = "Not enough stock"
 
-        cur.execute("INSERT INTO history(part, qty, action, user, date) VALUES (?,?,?,?,?)",
-                    (part, qty, "DISPATCH", session['user'], datetime.now()))
+        cur.execute("INSERT INTO history VALUES (NULL,?,?,?,?,?)",
+                    (part, qty, "DISPATCH", session['user'], str(datetime.now())))
 
         conn.commit()
         conn.close()
 
     return render_template("dispatch.html", msg=msg)
 
-# ---------------- HISTORY ----------------
-@app.route('/history')
-def history():
+# ---------------- REPORTS ----------------
+@app.route('/reports')
+def reports():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM history ORDER BY date DESC")
-    data = cur.fetchall()
+
+    filter_type = request.args.get("filter", "all")
+    now = datetime.now()
+
+    rows = cur.execute("SELECT * FROM history ORDER BY date DESC").fetchall()
+
+    filtered = []
+    for r in rows:
+        try:
+            ts = datetime.fromisoformat(r["date"])
+        except:
+            continue
+
+        if filter_type == "today" and ts.date() != now.date():
+            continue
+
+        if filter_type == "week" and ts < now - timedelta(days=7):
+            continue
+
+        filtered.append(r)
+
     conn.close()
-    return render_template("history.html", data=data)
+    return render_template("reports.html", data=filtered)
 
-# ---------------- QR ----------------
-@app.route('/qr/<part>')
-def qr(part):
-    os.makedirs("static", exist_ok=True)
-    img = qrcode.make(part)
-    path = f"static/{part}.png"
-    img.save(path)
-    return f"<h3>{part}</h3><img src='/{path}'>"
+# ---------------- EXCEL EXPORT ----------------
+@app.route('/export_excel')
+def export_excel():
+    conn = sqlite3.connect("erp.db")
 
-# ---------------- SETTINGS ----------------
-@app.route('/settings')
-def settings():
-    if 'user' not in session:
-        return redirect('/')
-    return render_template("settings.html")
+    df = pd.read_sql("SELECT * FROM history", conn)
+
+    df['date'] = pd.to_datetime(df['date'], format='mixed', errors='coerce')
+    df = df.dropna(subset=['date'])
+
+    file_path = "report.xlsx"
+    df.to_excel(file_path, index=False)
+
+    return send_file(file_path, as_attachment=True)
+
+# ---------------- CAMERA ----------------
+@app.route('/camera')
+def camera():
+    return render_template("camera.html")
+
+# ---------------- AI DETECT ----------------
+@app.route('/detect', methods=['POST'])
+def detect():
+    global last_saved
+
+    try:
+        data = request.json['image']
+        encoded = data.split(',')[1]
+
+        img_bytes = base64.b64decode(encoded)
+        np_arr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        h, w = gray.shape
+        roi = gray[int(h*0.3):int(h*0.8), int(w*0.2):int(w*0.8)]
+
+        if np.mean(roi) > 230:
+            return jsonify({"result": "NO PART ❌", "count": 0})
+
+        _, white = cv2.threshold(roi, 190, 255, cv2.THRESH_BINARY)
+        _, dark = cv2.threshold(roi, 70, 255, cv2.THRESH_BINARY_INV)
+
+        holes = cv2.bitwise_and(white, dark)
+
+        contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        hole_count = sum(1 for c in contours if 150 < cv2.contourArea(c) < 4000)
+
+        if hole_count > 0:
+            result = "DEFECT ❌"
+            if last_saved != "DEFECT":
+                cv2.imwrite(f"static/defects/{time.time()}.jpg", frame)
+                last_saved = "DEFECT"
+        else:
+            result = "OK ✅"
+            last_saved = "OK"
+
+        return jsonify({"result": result, "count": hole_count})
+
+    except Exception as e:
+        print(e)
+        return jsonify({"result": "Error", "count": 0})
 
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
@@ -495,5 +333,4 @@ def logout():
 
 # ---------------- RUN ----------------
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)

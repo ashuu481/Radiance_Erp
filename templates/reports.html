@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>📊 Company Reports</h2>
+
+<!-- 🔥 FILTER -->
+<div>
+    <a href="/reports?filter=all"><button>All</button></a>
+    <a href="/reports?filter=today"><button>Today</button></a>
+    <a href="/reports?filter=week"><button>This Week</button></a>
+
+    <a href="/export_excel?filter={{ filter_type }}">
+        <button style="background:green;">⬇ Excel</button>
+    </a>
+</div>
+
+<br>
+
+<table border="1" cellpadding="10" style="width:100%; background:white; color:black;">
+    <tr>
+        <th>Part</th>
+        <th>Qty</th>
+        <th>Process</th>
+        <th>Added By</th>
+        <th>Date & Time</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row.part }}</td>
+        <td>{{ row.qty }}</td>
+        <td>{{ row.type }}</td>
+        <td>{{ row.added_by }}</td>
+        <td>{{ row.timestamp }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+{% endblock %}
