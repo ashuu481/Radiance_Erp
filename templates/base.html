@@ -5,132 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* BRAND SECTION */
-.brand .title {
-    font-size: 24px;
-    font-weight: bold;
-    .brand .title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #00bcd4;
-    text-shadow: 0 0 8px rgba(0,188,212,0.5);
-}
-}
-
-.brand .tagline {
-    font-size: 12px;
-    color: gray;
-}
-
-/* NAV IMPROVEMENT */
-.nav {
-    background: linear-gradient(90deg, #1e1e2f, #2c2c54);
-    padding: 15px;
-}
-
-/* FOOTER PREMIUM */
-.footer {
-    text-align: center;
-    padding: 15px;
-    font-size: 12px;
-    color: gray;
-    border-top: 1px solid #444;
-}
-.footer {
-    text-align: center;
-    padding: 10px;
-    font-size: 12px;
-    color: gray;
-    margin-top: 20px;
-}
-    /* DASHBOARD GRID */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* BOX BUTTONS */
-.box {
-    text-decoration: none;
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
-    font-size: 18px;
-    transition: 0.3s;
-    font-weight: bold;
-}
-
-/* LIGHT MODE */
-body.light .box {
-    background: white;
-    color: black;
-    box-shadow: 0 5px 15px #ccc;
-}
-
-/* DARK MODE */
-body.dark .box {
-    background: #1e1e1e;
-    color: white;
-}
-
-/* HOVER EFFECT */
-.box:hover {
-    transform: translateY(-5px) scale(1.05);
-}
 body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
     transition: 0.3s;
 }
 
-/* THEMES */
+/* 🌗 THEMES */
 body.light { background: #f4f6f9; color: #000; }
-body.dark { background: #121212; color: #fff; }
+body.dark { background: #0f172a; color: #fff; }
 
-/* NAVBAR */
+/* 🔥 NAVBAR (TESLA STYLE) */
 .nav {
-    background: #111;
-    color: white;
-    padding: 12px;
+    background: rgba(20,20,30,0.7);
+    backdrop-filter: blur(15px);
+    padding: 15px 30px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.nav a {
-    color: white;
-    margin: 8px;
-    text-decoration: none;
+/* 🔥 BRAND CENTER */
+.brand {
+    text-align: center;
 }
 
-/* CONTAINER */
+.brand .title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #38bdf8;
+    text-shadow: 0 0 12px rgba(56,189,248,0.6);
+}
+
+.brand .tagline {
+    font-size: 11px;
+    color: gray;
+}
+
+/* 🔥 USER INFO */
+.user {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* 🔥 CONTAINER */
 .container {
-    padding: 20px;
+    padding: 25px;
 }
 
-/* CARD */
-.card {
+/* 🔥 FOOTER */
+.footer {
+    text-align: center;
     padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
+    font-size: 12px;
+    color: gray;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-body.light .card { background:white; box-shadow:0 0 10px #ccc; }
-body.dark .card { background:#1e1e1e; }
-
-/* BUTTON */
+/* 🔥 BUTTON */
 button {
     padding:10px;
     border:none;
-    border-radius:8px;
-    background:black;
+    border-radius:10px;
+    background: linear-gradient(135deg,#0ea5e9,#6366f1);
     color:white;
     cursor:pointer;
+    transition:0.3s;
 }
 
-/* INPUT */
+button:hover {
+    transform: scale(1.05);
+}
+
+/* 🔥 INPUT */
 input {
     padding:10px;
     margin:5px;
@@ -138,7 +86,7 @@ input {
     border:1px solid #ccc;
 }
 
-/* TABLE */
+/* 🔥 TABLE */
 table {
     width:100%;
     border-collapse:collapse;
@@ -156,59 +104,44 @@ th, td {
 <!-- 🔷 NAVBAR -->
 <div class="nav">
 
-<div class="brand">
-    <div class="title">🏭 Radiance Polymers AI System</div>
-    <div class="tagline">Smart Inventory & ERP System</div>
-</div>
+    <div class="user">
+        👤 {{ session.get('user') }} ({{ session.get('role') }})
+    </div>
 
-<div>
-{% if session.get('user') %}
-👤 {{ session.get('user') }} ({{ session.get('role') }})
-{% endif %}
-<h1 style="text-align:center; font-size:32px;">
-       
-</h1>
-<button onclick="toggleTheme()">🌗</button>
-</div>
+    <div class="brand">
+        <div class="title">🏭 Radiance Polymers AI</div>
+        <div class="tagline">Smart ERP & Automation</div>
+    </div>
+
+    <div>
+        <button onclick="toggleTheme()">🌗</button>
+    </div>
 
 </div>
-<!-- 🔷 SINGLE CONTENT BLOCK -->
+
+<!-- 🔷 CONTENT -->
 <div class="container">
 {% block content %}{% endblock %}
 </div>
 
-<!-- 🔷 THEME SCRIPT (SAFE) -->
+<!-- 🔷 FOOTER -->
+<div class="footer">
+© 2026 Radiance Polymers | AI Powered 🚀
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-
-    let savedTheme = localStorage.getItem("theme");
-
-    if(!savedTheme){
-        savedTheme = "light";
-    }
-
+    let savedTheme = localStorage.getItem("theme") || "dark";
     document.body.className = savedTheme;
-
 });
 
 function toggleTheme(){
-
     let current = document.body.className;
-
-    if(current === "dark"){
-        document.body.className = "light";
-        localStorage.setItem("theme", "light");
-    } else {
-        document.body.className = "dark";
-        localStorage.setItem("theme", "dark");
-    }
-
+    let next = current === "dark" ? "light" : "dark";
+    document.body.className = next;
+    localStorage.setItem("theme", next);
 }
 </script>
-<div class="footer">
-© 2026 Radiance Polymers | Developed by Ashu 🚀
-</div>
-
 
 </body>
 </html>

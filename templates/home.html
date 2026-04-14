@@ -2,93 +2,12 @@
 {% block content %}
 
 <style>
-/* 🔥 BACKGROUND */
-.dashboard {
-    padding: 20px;
-}
-
-/* 🔥 GRID */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-}
-
-/* 🔥 GLASS CARDS */
-.card {
-    padding: 20px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    transition: 0.3s;
-}
-
-.card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-}
 
 /* 🔥 TITLE */
 .title {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
-    margin-bottom: 20px;
-}
-
-/* 🔥 STAT */
-.stat {
-    font-size: 32px;
-    font-weight: bold;
-}
-
-/* 🔥 STATUS COLORS */
-.ok { color: #22c55e; }
-.defect { color: #ef4444; }
-.warn { color: #facc15; }
-
-/* 🔥 BUTTON GRID */
-.quick-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.action-btn {
-    padding: 15px;
-    border-radius: 15px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    transition: 0.3s;
-    background: linear-gradient(135deg, #0ea5e9, #6366f1);
-    color: white;
-
-    /* 🔥 premium effect */
-    position: relative;
-    overflow: hidden;
-}
-
-.action-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-}
-
-/* 🔥 swipe animation */
-.action-btn::after{
-    content:'';
-    position:absolute;
-    width:100%;
-    height:100%;
-    top:0;
-    left:-100%;
-    background: rgba(255,255,255,0.2);
-    transition:0.3s;
-}
-
-.action-btn:hover::after{
-    left:100%;
+    margin-bottom: 25px;
 }
 
 /* 🔥 LIVE BADGE */
@@ -104,24 +23,118 @@
 @keyframes blink {
     50% { opacity: 0.5; }
 }
+
+/* 🔥 GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+/* 🔥 CARDS (ULTRA GLASS) */
+.card {
+    padding: 25px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    transition: 0.4s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.03);
+}
+
+/* 🔥 CARD GLOW */
+.card::before {
+    content:'';
+    position:absolute;
+    width:150%;
+    height:150%;
+    background: radial-gradient(circle, rgba(0,255,255,0.2), transparent);
+    top:-50%;
+    left:-50%;
+    opacity:0;
+    transition:0.5s;
+}
+
+.card:hover::before {
+    opacity:1;
+}
+
+/* 🔥 STATS */
+.stat {
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.ok { color: #22c55e; }
+.defect { color: #ef4444; }
+.warn { color: #facc15; }
+
+/* 🔥 BUTTON GRID */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+    gap: 18px;
+    margin-top: 30px;
+}
+
+/* 🔥 PREMIUM BUTTON */
+.action-btn {
+    padding: 18px;
+    border-radius: 15px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    background: linear-gradient(135deg,#0ea5e9,#6366f1);
+    color: white;
+    transition: 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* 🔥 LIGHT SWEEP EFFECT */
+.action-btn::after{
+    content:'';
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:-100%;
+    background: rgba(255,255,255,0.2);
+    transition:0.4s;
+}
+
+.action-btn:hover::after{
+    left:100%;
+}
+
 </style>
 
 <div class="dashboard">
 
     <div class="title">
-        ⚙️ Dashboard <span class="live">LIVE</span>
+        ⚙️ Smart Dashboard <span class="live">LIVE</span>
     </div>
 
     <!-- 🔥 STATS -->
     <div class="grid">
 
         <div class="card">
-            <div>Total Parts Checked</div>
+            <div>Total Parts</div>
             <div class="stat ok" id="totalParts">0</div>
         </div>
 
         <div class="card">
-            <div>Defective Parts</div>
+            <div>Defects</div>
             <div class="stat defect" id="defects">0</div>
         </div>
 
@@ -131,13 +144,13 @@
         </div>
 
         <div class="card">
-            <div>System Status</div>
+            <div>Status</div>
             <div class="stat ok">Running ✅</div>
         </div>
 
     </div>
 
-    <!-- 🔥 QUICK ACTIONS (ROLE BASED) -->
+    <!-- 🔥 ACTIONS -->
     <div class="quick-actions">
 
         {% if session['role'] == 'admin' %}
@@ -149,26 +162,23 @@
             <a href="/quality"><button class="action-btn">🔍 Quality</button></a>
             <a href="/dispatch"><button class="action-btn">🚚 Dispatch</button></a>
             <a href="/reports"><button class="action-btn">📊 Reports</button></a>
-            <a href="/camera"><button class="action-btn">📹<br>Quality Camera</button></a>
+            <a href="/camera"><button class="action-btn">📹 Camera</button></a>
+            <a href="/logout">🚪 Logout</a>
 
         {% elif session['role'] == 'inward' %}
-
-            <a href="/inward"><button class="action-btn">📥 Inward Panel</button></a>
+            <a href="/inward"><button class="action-btn">📥 Inward</button></a>
 
         {% elif session['role'] == 'store' %}
-
-            <a href="/store"><button class="action-btn">🏬 Store Panel</button></a>
+            <a href="/store"><button class="action-btn">🏬 Store</button></a>
 
         {% elif session['role'] == 'production' %}
-
             <a href="/production"><button class="action-btn">🏭 Production</button></a>
             <a href="/assembly"><button class="action-btn">⚙️ Assembly</button></a>
             <a href="/quality"><button class="action-btn">🔍 Quality</button></a>
             <a href="/camera"><button class="action-btn">📹 Camera</button></a>
 
         {% elif session['role'] == 'dispatch' %}
-
-            <a href="/dispatch"><button class="action-btn">🚚 Dispatch Panel</button></a>
+            <a href="/dispatch"><button class="action-btn">🚚 Dispatch</button></a>
 
         {% endif %}
 
@@ -176,13 +186,11 @@
 
 </div>
 
-<!-- 🔥 LIVE DATA SCRIPT -->
 <script>
 let total = 0;
 let defects = 0;
 
 setInterval(() => {
-
     total += Math.floor(Math.random() * 3);
     defects += Math.floor(Math.random() * 2);
 
