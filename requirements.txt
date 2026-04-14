@@ -9,3 +9,4 @@ openpyxl
 opencv-python-headless
 numpy
 matplotlib
+psycopg2-binary
